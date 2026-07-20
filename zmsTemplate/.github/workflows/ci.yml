@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+      - run: dotnet test --no-build -c Release
+        shell: pwsh
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build (release only, test already passed)
+        run: dotnet build --no-restore -c Release
+
+      - name: Classify projects
+        id: classify
+        shell: pwsh
+        run: |
+          function Parse-Framework($fw) {
+            $fw = $fw.ToLower()
+            # net8.0, net10.0, net6.0-windows 等（.NET 5+，可带平台后缀）
+            if ($fw -match '^net(\d+)\.(\d+)') {
+              return @{ Family = "net"; Major = [int]$Matches[1]; Minor = [int]$Matches[2] }
+            }
+            # netcoreapp3.1（.NET Core 3.x，归 net 族）
+            if ($fw -match '^netcoreapp(\d+)\.(\d+)') {
+              return @{ Family = "net"; Major = [int]$Matches[1]; Minor = [int]$Matches[2] }
+            }
+            # net472, net48, net481（.NET Framework，无小数点，以 4 开头）
+            if ($fw -match '^net4(\d)(\d?)$') {
+              $m = [int]$Matches[1]; $p = if ($Matches[2]) { [int]$Matches[2] } else { 0 }
+              return @{ Family = "netfx"; Major = 4; Minor = $m; Patch = $p }
+            }
+            # netstandard2.0/2.1
+            if ($fw -match '^netstandard(\d+)\.(\d+)$') {
+              return @{ Family = "netstandard"; Major = [int]$Matches[1]; Minor = [int]$Matches[2] }
+            }
+            return @{ Family = "unknown"; Major = 0; Minor = 0 }
+          }
+
+          $exes = @(); $libs = @()
+          Get-ChildItem -Recurse -Filter "*.csproj" | ForEach-Object {
+            $content = Get-Content $_.FullName -Raw
+            $isTest = $content -match '(Microsoft\.NET\.Test\.Sdk|MSTest|NUnit|xunit\.v3\.mtp-v2|xunit|TestingPlatformDotnetTestSupport)'
+            $outType = if ($content -match '<OutputType>(.*?)</OutputType>') { $Matches[1] } else { "Library" }
+            $tfStr = if ($content -match '<TargetFrameworks>(.*?)</TargetFrameworks>') { $Matches[1] }
+                     elseif ($content -match '<TargetFramework>(.*?)</TargetFramework>') { $Matches[1] }
+                     else { "" }
+
+            if ($isTest) { return }
+
+            $frameworks = $tfStr.Split(';', [StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Parse-Framework $_ }
+
+            if ($outType -eq "Exe" -or $outType -eq "WinExe") {
+              $exes += [PSCustomObject]@{
+                Path = $_.FullName; Name = $_.BaseName
+                RawFrameworks = $tfStr.Split(';', [StringSplitOptions]::RemoveEmptyEntries)
+                Frameworks = $frameworks
+              }
+            } else {
+              $libs += $_.FullName
+            }
+          }
+
+          $exeJson = $exes | ConvertTo-Json -Compress -Depth 3
+          $libJson = $libs | ConvertTo-Json -Compress
+          $delim = "EOF_$([System.Guid]::NewGuid().ToString('N'))"
+          "exe_json<<$delim" >> $env:GITHUB_OUTPUT
+          $exeJson >> $env:GITHUB_OUTPUT
+          $delim >> $env:GITHUB_OUTPUT
+          "lib_json<<$delim" >> $env:GITHUB_OUTPUT
+          $libJson >> $env:GITHUB_OUTPUT
+          $delim >> $env:GITHUB_OUTPUT
+
+      - name: Pack libraries (nupkg)
+        shell: pwsh
+        run: |
+          $paths = '${{ steps.classify.outputs.lib_json }}' | ConvertFrom-Json
+          foreach ($p in $paths) {
+            Write-Host "Packing: $(Split-Path $p -Leaf)"
+            dotnet pack $p -c Release -o publish/nupkg
+            if ($LASTEXITCODE -ne 0) { throw "dotnet pack failed" }
+          }
+
+      - name: Publish EXEs (self-contained, highest by priority)
+        shell: pwsh
+        run: |
+          function Get-Highest {
+            param($frameworks)
+            $valid = $frameworks | Where-Object { -not ($_.Family -eq "net" -and $_.Major -lt 3) }
+            $valid | Sort-Object { @{net=3;netfx=2;netstandard=1}[$_.Family] }, `
+              { $_.Major }, { $_.Minor } -Descending | Select-Object -First 1
+          }
+          $err = $false
+          $exes = '${{ steps.classify.outputs.exe_json }}' | ConvertFrom-Json
+          $rids = @("win-x64","win-x86","win-arm64","linux-x64","linux-arm64","osx-x64","osx-arm64")
+          foreach ($exe in $exes) {
+            $best = Get-Highest $exe.Frameworks
+            if (-not $best) { Write-Host "跳过 $($exe.Name): 无可用框架"; continue }
+            $fw = $exe.RawFrameworks | Where-Object { $_ -match "net$($best.Major)[.$]$($best.Minor)" } | Select-Object -First 1
+            if (-not $fw) {
+              # netfx: 构造 net{Major}{Minor}{Patch} 形式匹配
+              $fw = $exe.RawFrameworks | Where-Object { $_ -eq "net$($best.Major)$($best.Minor)$($best.Patch)" -or $_ -eq "net$($best.Major)$($best.Minor)" } | Select-Object -First 1
+            }
+            if (-not $fw) { $fw = $exe.RawFrameworks[0] }
+
+            if ($best.Family -eq "netfx") {
+              dotnet publish $exe.Path -c Release -f $fw -r win-x64 -o "publish/exe/$($exe.Name)-$fw-win-x64"
+              if ($LASTEXITCODE -ne 0) { $err = $true }
+            } else {
+              foreach ($rid in $rids) {
+                $ext = if ($rid -like "win-*") { ".exe" } else { "" }
+                $out = "publish/exe/$($exe.Name)-$rid$ext"
+                dotnet publish $exe.Path -c Release -f $fw -r $rid --self-contained true `
+                  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+                  -o "publish/tmp"
+                if ($LASTEXITCODE -ne 0) { $err = $true; continue }
+                Move-Item "publish/tmp/$($exe.Name)$ext" "$out" -Force
+                Remove-Item "publish/tmp" -Recurse -Force -ErrorAction SilentlyContinue
+              }
+            }
+          }
+          if ($err) { throw "至少一个 dotnet publish 失败" }
+
+      - name: Publish EXEs (framework-dependent, all frameworks)
+        shell: pwsh
+        run: |
+          $err = $false
+          $exes = '${{ steps.classify.outputs.exe_json }}' | ConvertFrom-Json
+          foreach ($exe in $exes) {
+            foreach ($fw in $exe.RawFrameworks) {
+              Write-Host "FDD $($exe.Name) → $fw"
+              dotnet publish $exe.Path -c Release -f $fw -o "publish/fdd/$($exe.Name)-$fw"
+              if ($LASTEXITCODE -ne 0) { $err = $true }
+            }
+          }
+          if ($err) { throw "至少一个 FDD publish 失败" }
+
+      - name: List artifacts
+        run: find publish -type f | sort
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: publish/**
+          generate_release_notes: true

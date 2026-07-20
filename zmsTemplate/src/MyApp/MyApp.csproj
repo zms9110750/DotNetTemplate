@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <OutputType>Library</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
+    <AssemblyName>$(Authors).$(MSBuildProjectName)</AssemblyName>
+    <Description>Auto-generated library project</Description>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Title></Title>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <PackageReadmeFile>Readme.md</PackageReadmeFile>
+    <PackageTags></PackageTags>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
+    <AssemblyName>$(Authors).$(MSBuildProjectName)</AssemblyName>
+    <Description>Auto-generated GUI sample</Description>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <UseDI>true</UseDI>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Photino.Blazor" Version="4.0.13" />
+    <PackageReference Include="Masa.Blazor" Version="1.11.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsLib)' == 'true'">
+    <ProjectReference Include="..\..\src\MyApp\MyApp.csproj" />
+  </ItemGroup>
+
+</Project>

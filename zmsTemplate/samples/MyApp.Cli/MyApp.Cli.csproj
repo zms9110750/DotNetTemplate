@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
+    <AssemblyName>$(Authors).$(MSBuildProjectName)</AssemblyName>
+    <Description>Auto-generated CLI sample</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.9" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsLib)' == 'true'">
+    <ProjectReference Include="..\..\src\MyApp\MyApp.csproj" />
+  </ItemGroup>
+
+</Project>

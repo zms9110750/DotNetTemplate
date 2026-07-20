@@ -1,0 +1,69 @@
+<Project>
+  <!-- ===== 模板符号 → MSBuild 属性（由模板引擎替换） ===== -->
+  <PropertyGroup>
+    <IsLib>{{IsLib}}</IsLib>
+    <IsCli>{{IsCli}}</IsCli>
+    <IsGui>{{IsGui}}</IsGui>
+    <IsTest>{{IsTest}}</IsTest>
+    <UsePolly>{{UsePolly}}</UsePolly>
+    <UseFusionCache>{{UseFusionCache}}</UseFusionCache>
+    <UseDI>{{UseDI}}</UseDI>
+    <UseLog>{{UseLog}}</UseLog>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>{{AuthorName}}</Authors>
+    <Version>0.1.0-a.0</Version>
+    <RepositoryUrl>https://github.com/{{AuthorName}}/MyApp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <!-- ===== 条件包引用 ===== -->
+  <!--  通用：不管 DI 与否，只要开就加 -->
+  
+  <ItemGroup Condition="'$(UseFusionCache)' == 'true'">
+    <PackageReference Include="ZiggyCreatures.FusionCache.Serialization.SystemTextJson" Version="2.6.0" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseLog)' == 'true'">
+    <PackageReference Include="Serilog" Version="4.4.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <!--  按 DI 分组 -->
+  <Choose>
+    <When Condition="'$(UseDI)' == 'true'">
+      <ItemGroup Condition="'$(UseFusionCache)' == 'true'">
+        <PackageReference Include="NeoSmart.Caching.Sqlite.AspNetCore" Version="9.0.1" />
+      </ItemGroup>
+      <ItemGroup Condition="'$(UsePolly)' == 'true' And '$(UseFusionCache)' == 'true'">
+        <PackageReference Include="Axion.Extensions.Http.Resilience.Caching.Hybrid" Version="10.4.0" />
+      </ItemGroup>
+      <ItemGroup Condition="'$(UsePolly)' == 'true' And '$(UseFusionCache)' != 'true'">
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
+      </ItemGroup>
+      <ItemGroup Condition="'$(UseLog)' == 'true'">
+        <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+        <PackageReference Include="Soenneker.HttpClients.LoggingHandler" Version="4.0.191" />
+      </ItemGroup>
+    </When>
+
+    <Otherwise>
+      <ItemGroup Condition="'$(UseFusionCache)' == 'true'">
+        <PackageReference Include="NeoSmart.Caching.Sqlite" Version="9.0.1" />
+      </ItemGroup>
+      <ItemGroup Condition="'$(UsePolly)' == 'true' And '$(UseFusionCache)' == 'true'">
+        <PackageReference Include="Axion.Extensions.Polly.Caching.Hybrid" Version="10.4.0" />
+      </ItemGroup>
+      <ItemGroup Condition="'$(UsePolly)' == 'true' And '$(UseFusionCache)' != 'true'">
+        <PackageReference Include="Polly.Core" Version="8.7.0" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+
+  <!-- 编译前格式化 -->
+  <Target Name="FormatCode" BeforeTargets="BeforeBuild" Condition="Exists('$(MSBuildThisFileDirectory).editorconfig')">
+    <Exec Command="dotnet format "$(MSBuildThisFileDirectory)" --no-restore" />
+  </Target>
+</Project>

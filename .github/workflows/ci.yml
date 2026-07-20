@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check all templates are within nuspec paths
+        shell: pwsh
+        run: |
+          # 读取 nuspec 中所有的 <file src="..." />
+          $nuspec = [xml](Get-Content DotNetTemplate.nuspec)
+          $fileSrcs = $nuspec.package.files.file | ForEach-Object { $_.src }
+          Write-Host "nuspec 声明了:"
+          $fileSrcs | ForEach-Object { "  $_" }
+
+          # 收集仓库中所有 .template.config/template.json
+          $allTemplates = Get-ChildItem -Recurse -Filter "template.json" | Where-Object {
+            $_.FullName -like "*\.template.config\template.json"
+          }
+
+          $errors = @()
+          foreach ($tpl in $allTemplates) {
+            $relPath = Resolve-Path -Relative $tpl.Directory.Parent.FullName
+            $covered = $false
+            foreach ($src in $fileSrcs) {
+              # src 是 glob 如 "zmsTemplate/**/*"，提取目录前缀
+              $prefix = $src -replace '/?\*\*?/\*$', ''
+              if ($relPath -match "^\./$prefix") {
+                $covered = $true
+                break
+              }
+            }
+            if (-not $covered) {
+              $errors += "❌ 未覆盖: $relPath 不在 nuspec 的 file src 路径中"
+            } else {
+              Write-Host "✅ 已覆盖: $relPath"
+            }
+          }
+
+          if ($errors.Count -gt 0) {
+            Write-Host "`n$($errors -join "`n")"
+            throw "发现未包含在 nuspec 中的模板，请更新 DotNetTemplate.nuspec 的 <files> 添加对应路径"
+          }
+          Write-Host "`n✅ 所有模板均在 nuspec 覆盖范围内"
+
+  pack:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pack
+        run: nuget pack DotNetTemplate.nuspec -OutputDirectory out
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*.nupkg
+          generate_release_notes: true

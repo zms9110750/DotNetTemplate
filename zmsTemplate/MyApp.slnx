@@ -1,0 +1,33 @@
+<Solution>
+<!--#if (IsLib) -->
+  <Folder Name="/src/">
+    <Project Path="src/MyApp/MyApp.csproj" />
+  </Folder>
+  <!--#if (IsCli) -->
+  <Folder Name="/samples/">
+    <Project Path="samples/MyApp.Cli/MyApp.Cli.csproj" />
+  </Folder>
+  <!--#endif -->
+  <!--#if (IsGui) -->
+  <Folder Name="/samples/">
+    <Project Path="samples/MyApp.GUI/MyApp.GUI.csproj" />
+  </Folder>
+  <!--#endif -->
+<!--#else -->
+  <!--#if (IsCli) -->
+  <Folder Name="/src/">
+    <Project Path="src/MyApp.Cli/MyApp.Cli.csproj" />
+  </Folder>
+  <!--#endif -->
+  <!--#if (IsGui) -->
+  <Folder Name="/src/">
+    <Project Path="src/MyApp.GUI/MyApp.GUI.csproj" />
+  </Folder>
+  <!--#endif -->
+<!--#endif -->
+<!--#if (IsTest) -->
+  <Folder Name="/test/">
+    <Project Path="test/MyApp.Test/MyApp.Test.csproj" />
+  </Folder>
+<!--#endif -->
+</Solution>
