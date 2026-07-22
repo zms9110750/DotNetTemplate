@@ -13,7 +13,7 @@ public static class CliRoot
         Root.Add(items);
         Root.SetAction(ctx =>
         {
-            foreach (var item in ctx.GetValue(items))
+            foreach (var item in ctx.GetValue(items) ?? [])
                 Console.WriteLine(item);
         });
 

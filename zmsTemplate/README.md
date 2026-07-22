@@ -74,7 +74,8 @@ Tree/                     ← 镜像命令树层级
 | 命令 | 参数 | 说明 |
 |------|------|------|
 | `（无子命令）` | `[items...]`（可选） | 逐行输出所有参数值 |
-| `rand` | `--min`（默认 1）、`--max`（默认 100）、`--count`（默认 1） | 生成指定数量的随机整数 |
+| `rand` | `--min`（默认 0）、`--max`（默认 100）、`--count`（默认 1，上限 100） | 生成指定数量的随机整数 |
+| `rand janken` | `--hand`（可选，Guu/Choki/Paa，默认 Guu） | 与电脑猜拳 |
 | `hello` | `<name>`（必填） | 输出 `hello <name>` |
 //#endif
 
@@ -174,6 +175,8 @@ services.AddHttpClient("MyClient")
 ```
 
 已自动包含 Polly.Core，无需单独引用。
+
+**缓存键：** `Axion.Extensions.Polly.Caching.Hybrid` 默认使用 `ResilienceContext.OperationKey` 作为缓存键。该值在每次执行 pipeline 时通过 resilience context 传入，通常是操作名称（如 HTTP 请求的 method + URL）。如需自定义缓存键，可设置 `CachingStrategyOptions.CacheKeyProvider`。
 
   //#else
 使用 `Microsoft.Extensions.Http.Resilience` 自定义管道：
