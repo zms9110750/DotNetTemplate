@@ -54,21 +54,28 @@
 
 基于 `System.CommandLine` 的命令行应用。入口在 `Tree/CliRoot.cs`。
 
-**文件布局建议：**
+**文件布局：**
 
 ```
 Tree/                     ← 镜像命令树层级
 ├── CliRoot.cs            ← 根命令，注册所有子命令
-├── User/                 ← 假设有 user 子命令
-│   ├── List.cs           ← user list
-│   └── Create.cs         ← user create
-Options/                  ← 命令候选项的枚举
-Shared/                   ← 不同命令共享的参数
+├── Rand/
+│   └── RandCommand.cs    ← rand 子命令：生成随机数
+├── Hello/
+│   └── HelloCommand.cs   ← hello 子命令：输出问候语
 ```
 
 - 每个命令的 `SetAction` 提取为独立的成员方法
 - 命令树深一层，`Tree/` 里就深一层文件夹
 - `Options/` 放 `enum`，`Shared/` 放复用 `Option` 实例
+
+**命令说明：**
+
+| 命令 | 参数 | 说明 |
+|------|------|------|
+| `（无子命令）` | `[items...]`（可选） | 逐行输出所有参数值 |
+| `rand` | `--min`（默认 1）、`--max`（默认 100）、`--count`（默认 1） | 生成指定数量的随机整数 |
+| `hello` | `<name>`（必填） | 输出 `hello <name>` |
 //#endif
 
 //#if (TIsGui)
