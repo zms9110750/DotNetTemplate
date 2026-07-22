@@ -52,7 +52,7 @@
   <!-- 按 DI 分组 -->
   <Choose>
     <When Condition="'$(UseDI)' == 'true'">
-      <ItemGroup>
+      <ItemGroup Condition="'$(UseFusionCache)' != 'true' And '$(UsePolly)' != 'true' And '$(UseLog)' != 'true'">
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.4" />
       </ItemGroup>
       <ItemGroup Condition="'$(UseFusionCache)' == 'true'">
