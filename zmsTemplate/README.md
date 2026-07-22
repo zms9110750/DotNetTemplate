@@ -176,7 +176,11 @@ services.AddHttpClient("MyClient")
 
 已自动包含 Polly.Core，无需单独引用。
 
-**缓存键：** `Axion.Extensions.Polly.Caching.Hybrid` 默认使用 `ResilienceContext.OperationKey` 作为缓存键。该值在每次执行 pipeline 时通过 resilience context 传入，通常是操作名称（如 HTTP 请求的 method + URL）。如需自定义缓存键，可设置 `CachingStrategyOptions.CacheKeyProvider`。
+**缓存键：** HTTP 版本自动从请求生成（格式 `{method}/{scheme}/{host}{path}`），如 `get/https/api.example.com/users` 和 `get/https/api.example.com/orders` 自动区分。通用版本需在执行时通过 `ResilienceContext.OperationKey` 显式传入。可通过 `CachingStrategyOptions.CacheKeyProvider` 自行定义。
+
+**缓存命中：** 命中时直接返回缓存值，**跳过 pipeline 中后续所有策略**（retry、timeout 等不执行）。缓存读/写异常不阻断 pipeline，自动降级执行。
+
+**过期时间：** 默认无 TTL，依赖 FusionCache 全局配置。如需自定义，设置 `HybridCacheSetEntryOptionsProvider`。
 
   //#else
 使用 `Microsoft.Extensions.Http.Resilience` 自定义管道：
