@@ -302,6 +302,8 @@ pipeline.Execute(() => Console.WriteLine("OK"));
 ```
 
   //#endif
+
+**缓存键：** 默认使用 `ResilienceContext.OperationKey` 作为缓存键，该值在执行 pipeline 时通过 resilience context 传入。可通过 `CachingStrategyOptions.CacheKeyProvider` 自定义。
 //#endif
 
 //#if (TUseLog)
