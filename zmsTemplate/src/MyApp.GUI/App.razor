@@ -1,11 +1,18 @@
-<Router AppAssembly="@typeof(Program).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
-        </LayoutView>
-    </NotFound>
-</Router>
+@namespace MyApp
+
+<div>
+    <h1>@Title</h1>
+    <p>Welcome to your Photino desktop app!</p>
+    <p>Current count: @currentCount</p>
+    <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+</div>
+
+@code {
+    string Title = "MyApp";
+    private int currentCount = 0;
+
+    void IncrementCount()
+    {
+        currentCount++;
+    }
+}

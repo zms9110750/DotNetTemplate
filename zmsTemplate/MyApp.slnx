@@ -1,31 +1,31 @@
 <Solution>
-<!--#if (IsLib) -->
+<!--#if (TIsLib) -->
   <Folder Name="/src/">
     <Project Path="src/MyApp/MyApp.csproj" />
   </Folder>
-  <!--#if (IsCli) -->
+  <!--#if (TIsCli || TIsGui) -->
   <Folder Name="/samples/">
+    <!--#if (TIsCli) -->
     <Project Path="samples/MyApp.Cli/MyApp.Cli.csproj" />
-  </Folder>
-  <!--#endif -->
-  <!--#if (IsGui) -->
-  <Folder Name="/samples/">
+    <!--#endif -->
+    <!--#if (TIsGui) -->
     <Project Path="samples/MyApp.GUI/MyApp.GUI.csproj" />
+    <!--#endif -->
   </Folder>
   <!--#endif -->
 <!--#else -->
-  <!--#if (IsCli) -->
+  <!--#if (TIsCli || TIsGui) -->
   <Folder Name="/src/">
+    <!--#if (TIsCli) -->
     <Project Path="src/MyApp.Cli/MyApp.Cli.csproj" />
-  </Folder>
-  <!--#endif -->
-  <!--#if (IsGui) -->
-  <Folder Name="/src/">
+    <!--#endif -->
+    <!--#if (TIsGui) -->
     <Project Path="src/MyApp.GUI/MyApp.GUI.csproj" />
+    <!--#endif -->
   </Folder>
   <!--#endif -->
 <!--#endif -->
-<!--#if (IsTest) -->
+<!--#if (TIsTest) -->
   <Folder Name="/test/">
     <Project Path="test/MyApp.Test/MyApp.Test.csproj" />
   </Folder>

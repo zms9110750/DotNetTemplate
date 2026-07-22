@@ -2,9 +2,9 @@
   "$schema": "http://json.schemastore.org/template",
   "author": "zms9110750",
   "classifications": [ "Console", "Library", "Test" ],
-  "name": "JMComic 式项目模板",
-  "description": "类库 + CLI/GUI 示例 + 测试，参考 JMComic 结构",
-  "identity": "JMComicTemplate",
+  "name": "开源项目模板",
+  "description": "类库 + CLI/GUI 示例 + 测试的完整解决方案模板",
+  "identity": "OpenSourceProjectTemplate",
   "shortName": "jm",
   "sourceName": "MyApp",
   "preferNameDirectory": true,
@@ -14,10 +14,10 @@
   },
 
   "symbols": {
-    "IsLib":  { "type": "parameter", "description": "类库 (src)",             "datatype": "bool", "defaultValue": "false" },
-    "IsCli":  { "type": "parameter", "description": "CLI 示例 (samples/CLI)", "datatype": "bool", "defaultValue": "false" },
-    "IsGui":  { "type": "parameter", "description": "GUI 示例 (samples/GUI)", "datatype": "bool", "defaultValue": "false" },
-    "IsTest": { "type": "parameter", "description": "测试 (test)",            "datatype": "bool", "defaultValue": "false" },
+    "TIsLib":  { "type": "parameter", "description": "类库 (src)",             "datatype": "bool", "defaultValue": "false", "replaces": "{{TIsLib}}" },
+    "TIsCli":  { "type": "parameter", "description": "CLI 示例 (samples/CLI)", "datatype": "bool", "defaultValue": "false", "replaces": "{{TIsCli}}" },
+    "TIsGui":  { "type": "parameter", "description": "GUI 示例 (samples/GUI)", "datatype": "bool", "defaultValue": "false", "replaces": "{{TIsGui}}" },
+    "TIsTest": { "type": "parameter", "description": "测试 (test)",            "datatype": "bool", "defaultValue": "false", "replaces": "{{TIsTest}}" },
 
     "AuthorName": {
       "type": "parameter",
@@ -27,14 +27,15 @@
       "replaces": "{{AuthorName}}"
     },
 
-    "UsePolly":       { "type": "parameter", "description": "Polly 弹性/重试",        "datatype": "bool", "defaultValue": "false" },
-    "UseFusionCache": { "type": "parameter", "description": "FusionCache 缓存",       "datatype": "bool", "defaultValue": "false" },
-    "UseDI":          { "type": "parameter", "description": "DI 依赖注入容器",         "datatype": "bool", "defaultValue": "false" },
-    "UseLog":         { "type": "parameter", "description": "Serilog 日志",            "datatype": "bool", "defaultValue": "false" }
+    "TUsePolly":       { "type": "parameter", "description": "Polly 弹性/重试",        "datatype": "bool", "defaultValue": "false", "replaces": "{{TUsePolly}}" },
+    "TUseFusionCache": { "type": "parameter", "description": "FusionCache 缓存",       "datatype": "bool", "defaultValue": "false", "replaces": "{{TUseFusionCache}}" },
+    "TUseDI":          { "type": "parameter", "description": "DI 依赖注入容器",         "datatype": "bool", "defaultValue": "false", "replaces": "{{TUseDI}}" },
+    "TUseLog":         { "type": "parameter", "description": "Serilog 日志",            "datatype": "bool", "defaultValue": "false", "replaces": "{{TUseLog}}" }
   },
 
   "sources": [
     {
+      "copyOnly": [ "**/Global.cs" ],
       "modifiers": [
         // 默认排除所有
         { "condition": "true", "exclude": [
@@ -43,20 +44,39 @@
           "test/**/*"
         ] },
         // lib 始终进 src
-        { "condition": "(IsLib == true)", "include": [ "src/MyApp/**/*" ] },
+        { "condition": "(TIsLib == true)", "include": [ "src/MyApp/**/*" ], "copyOnly": [ "**/Global.cs" ] },
         // lib 开 + cli 开 → CLI 进 samples（引用 lib）
-        { "condition": "(IsLib == true && IsCli == true)", "include": [ "samples/MyApp.Cli/**/*" ] },
+        { "condition": "(TIsLib == true && TIsCli == true)", "include": [ "samples/MyApp.Cli/**/*" ], "copyOnly": [ "**/Global.cs" ] },
         // lib 开 + gui 开 → GUI 进 samples（引用 lib）
-        { "condition": "(IsLib == true && IsGui == true)", "include": [ "samples/MyApp.GUI/**/*" ] },
+        { "condition": "(TIsLib == true && TIsGui == true)", "include": [ "samples/MyApp.GUI/**/*" ], "copyOnly": [ "**/Global.cs" ] },
         // lib 关 + cli 开 → CLI 进 src（无 lib）
-        { "condition": "(IsLib == false && IsCli == true)", "include": [ "src/MyApp.Cli/**/*" ] },
+        { "condition": "(TIsLib == false && TIsCli == true)", "include": [ "src/MyApp.Cli/**/*" ], "copyOnly": [ "**/Global.cs" ] },
         // lib 关 + gui 开 → GUI 进 src（无 lib）
-        { "condition": "(IsLib == false && IsGui == true)", "include": [ "src/MyApp.GUI/**/*" ] },
+        { "condition": "(TIsLib == false && TIsGui == true)", "include": [ "src/MyApp.GUI/**/*" ], "copyOnly": [ "**/Global.cs" ] },
         // test 始终进 test
-        { "condition": "(IsTest == true)", "include": [ "test/**/*" ] }
+        { "condition": "(TIsTest == true)", "include": [ "test/**/*" ], "copyOnly": [ "**/Global.cs" ] }
       ]
     }
   ],
+
+  "specialCustomOperations": {
+    "**/*.md": {
+      "operations": [
+        {
+          "type": "conditional",
+          "configuration": {
+            "if": [ "//#if" ],
+            "else": [ "//#else" ],
+            "elseif": [ "//#elseif" ],
+            "endif": [ "//#endif" ],
+            "trim": true,
+            "wholeLine": true,
+            "evaluator": "C++"
+          }
+        }
+      ]
+    }
+  },
 
   "postActions": [
     {
