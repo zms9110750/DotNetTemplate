@@ -1,4 +1,4 @@
-﻿# {{AuthorName}}.MyApp
+﻿# MyApp
 
 这是一个由 **zmsTemplate** 生成的开源项目。
 

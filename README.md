@@ -35,7 +35,7 @@ dotnet new jm -n MyApp --TIsLib true --TIsCli true
 | `--TUseFusionCache` | FusionCache 缓存 |
 | `--TUseDI` | DI 依赖注入容器 |
 | `--TUseLog` | Serilog 日志 |
-| `--TAuthorName` | 作者名（默认 zms9110750） |
+| `--TAuthorName` | 作者名 |
 
 推荐组合：
 
