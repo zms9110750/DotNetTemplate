@@ -158,12 +158,9 @@ services.AddSqliteCache("cache.db")
   //#if (TUseFusionCache)
 ##### Polly + FusionCache
 
-使用 `Axion.Extensions.Http.Resilience.Caching.Hybrid`（`HybridCache` 来自上方 `.AsHybridCache()`）：
+使用 `Axion.Extensions.Http.Resilience.Caching.Hybrid`（`HybridCache` 已由上方 `.AsHybridCache()` 注册）：
 
 ```csharp
-services.AddHybridCache()
-    .AddSerializer(HttpResponseMessageHybridCacheSerializer.Instance);
-
 services.AddHttpClient("MyClient")
     .AddResilienceHandler("MyHandler", (pipeline, context) =>
     {
@@ -174,13 +171,31 @@ services.AddHttpClient("MyClient")
     });
 ```
 
+```csharp
+// 使用
+var client = factory.CreateClient("MyClient");
+var response = await client.GetAsync("https://api.example.com/users/1");
+// 第二次请求，相同的 URL → 缓存命中，直接返回
+```
+
 已自动包含 Polly.Core，无需单独引用。
 
-**缓存键：** HTTP 版本自动从请求生成（格式 `{method}/{scheme}/{host}{path}`），如 `get/https/api.example.com/users` 和 `get/https/api.example.com/orders` 自动区分。通用版本需在执行时通过 `ResilienceContext.OperationKey` 显式传入。可通过 `CachingStrategyOptions.CacheKeyProvider` 自行定义。
+**缓存键：** HTTP 版本自动从请求生成（格式 `{method}/{scheme}/{host}{path}`），如 `get/https/api.example.com/users/1` 和 `get/https/api.example.com/users/2` 因 path 不同自动区分。通用版本需在执行时通过 `ResilienceContext.OperationKey` 显式传入。可通过 `CachingStrategyOptions.CacheKeyProvider` 自行定义。
 
 **缓存命中：** 命中时直接返回缓存值，**跳过 pipeline 中后续所有策略**（retry、timeout 等不执行）。缓存读/写异常不阻断 pipeline，自动降级执行。
 
-**过期时间：** 默认无 TTL，依赖 FusionCache 全局配置。如需自定义，设置 `HybridCacheSetEntryOptionsProvider`。
+**过期时间：** 默认无 TTL，依赖 FusionCache 全局配置。如需自定义：
+
+```csharp
+pipeline.AddCaching(new HttpCachingStrategyOptions
+{
+    HybridCache = ...,
+    HybridCacheSetEntryOptionsProvider = _ => new(new HybridCacheEntryOptions
+    {
+        Expiration = TimeSpan.FromMinutes(5)
+    })
+});
+```
 
   //#else
 使用 `Microsoft.Extensions.Http.Resilience` 自定义管道：
