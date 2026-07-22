@@ -4,10 +4,10 @@
 
 ## 安装
 
-从 GitHub Releases 下载最新 `.nupkg` 并安装：
+从 [GitHub Releases](https://github.com/zms9110750/DotNetTemplate/releases) 下载最新 `.nupkg` 并安装：
 
 ```bash
-dotnet new install zms9110750.DotNetTemplate.0.1.0-a.0.nupkg
+dotnet new install zms9110750.DotNetTemplate.*.nupkg
 ```
 
 或直接使用模板源码目录：
@@ -59,11 +59,11 @@ dotnet new jm -n MyApp --TIsCli true
 
 ## 打包
 
-```bash
-nuget pack DotNetTemplate.nuspec -OutputDirectory out
-```
+GitHub Actions 在推送 `v*` 标签时自动打包并发布到 Releases。手动打包：
 
-生成 `.nupkg` 后可上传 NuGet 或 GitHub Releases 分发。
+```bash
+dotnet pack DotNetTemplate.nuspec -o out
+```
 
 ## 分支策略
 
