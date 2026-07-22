@@ -23,7 +23,7 @@
       "type": "parameter",
       "description": "作者名",
       "datatype": "text",
-      "defaultValue": "zms9110750",
+      "defaultValue": "",
       "replaces": "{{AuthorName}}"
     },
 
