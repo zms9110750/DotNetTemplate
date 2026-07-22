@@ -1,6 +1,6 @@
 ﻿# {{AuthorName}}.MyApp
 
-这是一个由 **zmsTemplate** 生成的项目模板。
+这是一个由 **zmsTemplate** 生成的开源项目。
 
 ---
 
@@ -25,31 +25,31 @@
 
 解决方案已按文件夹组织：
 
-<!--#if (IsLib) -->
+//#if (TIsLib)
 - `/src/` — 类库
-  <!--#if (IsCli) -->
+  //#if (TIsCli)
 - `/samples/` — CLI 示例
-  <!--#endif -->
-  <!--#if (IsGui) -->
+  //#endif
+  //#if (TIsGui)
 - `/samples/` — GUI 示例
-  <!--#endif -->
-<!--#else -->
-  <!--#if (IsCli) -->
+  //#endif
+//#else
+  //#if (TIsCli)
 - `/src/` — CLI 应用
-  <!--#endif -->
-  <!--#if (IsGui) -->
+  //#endif
+  //#if (TIsGui)
 - `/src/` — GUI 应用
-  <!--#endif -->
-<!--#endif -->
-<!--#if (IsTest) -->
+  //#endif
+//#endif
+//#if (TIsTest)
 - `/test/` — 测试项目
-<!--#endif -->
+//#endif
 
 ---
 
 ## 项目说明
 
-<!--#if (IsCli) -->
+//#if (TIsCli)
 ### CLI
 
 基于 `System.CommandLine` 的命令行应用。入口在 `Tree/CliRoot.cs`。
@@ -69,27 +69,35 @@ Shared/                   ← 不同命令共享的参数
 - 每个命令的 `SetAction` 提取为独立的成员方法
 - 命令树深一层，`Tree/` 里就深一层文件夹
 - `Options/` 放 `enum`，`Shared/` 放复用 `Option` 实例
-<!--#endif -->
+//#endif
 
-<!--#if (IsGui) -->
+//#if (TIsGui)
 ### GUI
 
 基于 `Photino.Blazor` + `Masa.Blazor` 的跨平台桌面应用。无需 WPF/WinForms 依赖，Windows、Linux、macOS 均可运行。
 
-窗口大小自动取屏幕的 2/3（Windows 用 `user32.dll` 获取，其他平台兜底 1920×1080）。
-<!--#endif -->
+窗口大小默认 1280×720。
+//#endif
 
-<!--#if (IsLib) -->
+//#if (TIsLib)
 ### 类库
 
-核心逻辑放在 `src/MyApp/`，CLI 和 GUI 通过项目引用调用。生成 XML 文档文件，裸用 DLL 也能看到注释提示。
-<!--#endif -->
+核心逻辑放在 `src/MyApp/`，//#if (TIsCli && TIsGui)
+CLI 和 GUI 通过项目引用调用。
+//#elseif (TIsCli)
+CLI 通过项目引用调用。
+//#elseif (TIsGui)
+GUI 通过项目引用调用。
+//#endif
+生成 XML 文档文件，裸用 DLL 也能看到注释提示。
+//#endif
 
 ---
 
+//#if (TUseDI || TUseFusionCache || TUsePolly || TUseLog)
 ## 包使用指南
 
-<!--#if (UseDI) -->
+//#if (TUseDI)
 ### DI 模式
 
 依赖注入（DI）容器通过 `ServiceCollection` 构建，在应用入口处完成注册、构建、解析：
@@ -109,10 +117,10 @@ var myService = provider.GetRequiredService<IMyService>();
 
 以下各节为按特性注册的扩展方法调用，统一在 `BuildServiceProvider()` 之前执行。
 
-<!--#if (UseFusionCache) -->
+//#if (TUseFusionCache)
 #### FusionCache
 
-  <!--#if (UsePolly) -->
+  //#if (TUsePolly)
 
 ```csharp
 services.AddSqliteCache("cache.db")
@@ -124,7 +132,7 @@ services.AddSqliteCache("cache.db")
 
 `.AsHybridCache()` 将 FusionCache 桥接到 `Microsoft.Extensions.Caching.Hybrid`，供下方 Polly 缓存策略使用。
 
-  <!--#else -->
+  //#else
 
 ```csharp
 services.AddSqliteCache("cache.db")
@@ -133,13 +141,13 @@ services.AddSqliteCache("cache.db")
     .WithSerializer(new FusionCacheSystemTextJsonSerializer());
 ```
 
-  <!--#endif -->
-<!--#endif -->
+  //#endif
+//#endif
 
-<!--#if (UsePolly) -->
+//#if (TUsePolly)
 #### Polly
 
-  <!--#if (UseFusionCache) -->
+  //#if (TUseFusionCache)
 ##### Polly + FusionCache
 
 使用 `Axion.Extensions.Http.Resilience.Caching.Hybrid`（`HybridCache` 来自上方 `.AsHybridCache()`）：
@@ -160,7 +168,7 @@ services.AddHttpClient("MyClient")
 
 已自动包含 Polly.Core，无需单独引用。
 
-  <!--#else -->
+  //#else
 使用 `Microsoft.Extensions.Http.Resilience` 自定义管道：
 
 ```csharp
@@ -197,10 +205,10 @@ services.AddHttpClient("MyClient")
     });
 ```
 
-  <!--#endif -->
-<!--#endif -->
+  //#endif
+//#endif
 
-<!--#if (UseLog) -->
+//#if (TUseLog)
 #### Serilog
 
 ```csharp
@@ -215,18 +223,16 @@ builder.Services.AddSerilog((provider, config) =>
 ```
 
 Serilog 的配置从 `appsettings.json` 的 `Serilog` 节读取（不是 `Logging.LogLevel`），`Serilog.Extensions.Logging` 桥接包将 Serilog 接入 `Microsoft.Extensions.Logging` 抽象。
-<!--#endif -->
+//#endif
 
-<!--#if (UseDI && UseLog) -->
+//#if (TUseDI && TUseLog)
 #### Soenneker.HttpClients.LoggingHandler
 
 启用后自动为 HTTP 请求添加日志输出，便于调试。
-<!--#endif -->
+//#endif
 
-<!--#else -->
-### 无 DI 模式
-
-<!--#if (UseFusionCache) -->
+//#else
+//#if (TUseFusionCache)
 #### FusionCache
 
 ```csharp
@@ -241,33 +247,38 @@ var serializer = new FusionCacheSystemTextJsonSerializer();
 cache.SetupDistributedCache(l2Cache, serializer);
 ```
 
-  <!--#if (UsePolly) -->
-无 DI 时 `HybridCache` 需自行构建 `IServiceProvider` 或手动管理实例。
-  <!--#endif -->
-<!--#endif -->
-
-<!--#if (UsePolly) -->
-#### Polly
-
-  <!--#if (UseFusionCache) -->
-##### Polly + FusionCache
-
-使用 `Axion.Extensions.Polly.Caching.Hybrid`：
+  //#if (TUsePolly)
+FusionCache 默认不提供 HybridCache 适配器，需用 `FusionHybridCache` 手动包装：
 
 ```csharp
-var serviceProvider = /* 自行构建 IServiceProvider */;
+var fusionCache = new FusionCache(new FusionCacheOptions());
+var hybridCache = new FusionHybridCache(fusionCache);
+```
+
+  //#endif
+//#endif
+
+//#if (TUsePolly)
+#### Polly
+
+  //#if (TUseFusionCache)
+##### Polly + FusionCache
+
+使用 `Axion.Extensions.Polly.Caching.Hybrid`，将上面的 `hybridCache` 传入：
+
+```csharp
+var fusionCache = new FusionCache(new FusionCacheOptions());
+var hybridCache = new FusionHybridCache(fusionCache);
 
 var pipeline = new ResiliencePipelineBuilder()
     .AddCaching(new CachingStrategyOptions
     {
-        HybridCache = serviceProvider.GetRequiredService<HybridCache>()
+        HybridCache = hybridCache
     })
     .Build();
 ```
 
-需要自行管理 `IServiceProvider` 或 `HybridCache` 实例。
-
-  <!--#else -->
+  //#else
 ```csharp
 var pipeline = new ResiliencePipelineBuilder()
     .AddRetry(new RetryStrategyOptions
@@ -280,10 +291,10 @@ var pipeline = new ResiliencePipelineBuilder()
 pipeline.Execute(() => Console.WriteLine("OK"));
 ```
 
-  <!--#endif -->
-<!--#endif -->
+  //#endif
+//#endif
 
-<!--#if (UseLog) -->
+//#if (TUseLog)
 #### Serilog
 
 ```csharp
@@ -296,9 +307,11 @@ Log.Information("App started");
 ```
 
 Serilog 的配置从 `appsettings.json` 的 `Serilog` 节读取（不是 `Logging.LogLevel`）。
-<!--#endif -->
+//#endif
 
-<!--#endif -->
+//#endif
+
+//#endif
 
 ---
 
@@ -308,7 +321,7 @@ Serilog 的配置从 `appsettings.json` 的 `Serilog` 节读取（不是 `Loggin
 
 ```
 main          ← 稳定分支，PR 合并目标
-  └─ feature/xxx  ← 功能分支，从 main 分出
+  └─ feature/xxx  ← 功能分支，from main 分出
 ```
 
 所有改动在功能分支上进行，完成后提交 Pull Request 到 `main`。
@@ -327,3 +340,30 @@ main          ← 稳定分支，PR 合并目标
 4. Release Notes 根据 PR 标签自动分类生成
 
 标签名即版本号，与 `Directory.Build.props` 中的 `<Version>` 保持一致。
+
+**推送标签：** 在项目目录执行以下命令，后续 `git push` 会自动携带标签：
+
+```bash
+git config push.followTags true
+git push
+```
+
+首次推送标签可用 `git push --tags`。
+
+---
+
+## 分发说明
+
+GitHub Actions CI 在 `v*` 标签推送时自动构建并发布以下产物：
+
+| 类型 | 说明 |
+|------|------|
+| **自包含 zip** | 6 个 RID（win-x64/arm64, linux-x64/arm64, osx-x64/arm64），基于最高 TFM 发布 |
+| **FDD zip** | 按 TFM 分组，同一 TFM 的多个 exe 合并到同一 zip |
+| **NuGet** | 类库项目的 `.nupkg` 包 |
+
+### 限制
+
+- **.NET Framework**（net472/net48 等）：CI 运行在 Linux runner 上，不支持发布基于 Framework 的项目。如果你的项目必须发布 .NET Framework 版本，请在 Windows runner 上自行构建
+- **自包含发布的目标框架**：CI 的 `Get-Highest` 函数自动选择项目中的最高 TFM（如 net6.0;net8.0;net9.0 选 net9.0）。如需发布特定 TFM 的自包含包，请调整 `TargetFrameworks` 或手动构建
+- **Linux x86-32**：.NET 6 起已移除对 32 位 Linux 的官方支持，本 CI 不提供 `linux-x86` RID

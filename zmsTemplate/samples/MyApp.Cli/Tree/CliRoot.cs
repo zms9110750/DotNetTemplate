@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Runtime.InteropServices;
 
 public static class CliRoot
 {

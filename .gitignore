@@ -367,3 +367,6 @@ FodyWeavers.xsd
 
 # 下载目录（仅限根目录）
 /download/
+
+# Reasonix
+.reasonix/

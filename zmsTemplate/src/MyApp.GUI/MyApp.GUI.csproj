@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Photino.Blazor" Version="4.0.13" />
+    <PackageReference Include="PhotinoX.Blazor" Version="4.3.2" />
     <PackageReference Include="Masa.Blazor" Version="1.11.9" />
   </ItemGroup>
 
@@ -25,4 +25,10 @@
     </Content>
   </ItemGroup>
 
+  <Target Name="CheckPhotinoFramework" BeforeTargets="CoreCompile"
+          Condition="'$(TargetFramework)' != 'net8.0' And '$(TargetFramework)' != 'net9.0' And '$(TargetFramework)' != 'net10.0'">
+    <Error Text="PhotinoX.Blazor 当前仅支持 net8.0/net9.0/net10.0。当前目标: $(TargetFramework)。请调整 TargetFramework 或更新 PhotinoX.Blazor。" />
+  </Target>
+
 </Project>
+
