@@ -27,6 +27,7 @@ global using System.CommandLine;
 #endif
 #if IS_GUI
 global using Masa.Blazor;
+global using Photino.Blazor;
 #endif
 #if IS_TEST
 global using Xunit;

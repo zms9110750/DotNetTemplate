@@ -60,7 +60,9 @@
 Tree/                     ← 镜像命令树层级
 ├── CliRoot.cs            ← 根命令，注册所有子命令
 ├── Rand/
-│   └── RandCommand.cs    ← rand 子命令：生成随机数
+│   ├── RandCommand.cs    ← rand 子命令：生成随机数
+│   └── Janken/
+│       └── JankenCommand.cs  ← rand janken 子命令：猜拳
 ├── Hello/
 │   └── HelloCommand.cs   ← hello 子命令：输出问候语
 ```
@@ -75,7 +77,7 @@ Tree/                     ← 镜像命令树层级
 |------|------|------|
 | `（无子命令）` | `[items...]`（可选） | 逐行输出所有参数值 |
 | `rand` | `--min`（默认 0）、`--max`（默认 100）、`--count`（默认 1，上限 100） | 生成指定数量的随机整数 |
-| `rand janken` | `--hand`（可选，Guu/Choki/Paa，默认 Guu） | 与电脑猜拳 |
+| `rand janken` | `--hand`（可选，Rock/Scissors/Paper，默认 Rock） | 与电脑猜拳 |
 | `hello` | `<name>`（必填） | 输出 `hello <name>` |
 //#endif
 

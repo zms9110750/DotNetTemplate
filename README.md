@@ -20,7 +20,7 @@ dotnet new install DotNetTemplate/zmsTemplate
 ## 使用
 
 ```bash
-dotnet new jm -n MyApp --TIsLib true --TIsCli true
+dotnet new zms -n MyApp --TIsLib true --TIsCli true
 ```
 
 参数说明（所有参数均为可选，默认 false）：
@@ -41,10 +41,10 @@ dotnet new jm -n MyApp --TIsLib true --TIsCli true
 
 ```bash
 # 全功能：类库 + CLI + 测试 + DI + 日志
-dotnet new jm -n MyApp --TIsLib true --TIsCli true --TIsTest true --TUseDI true --TUseLog true
+dotnet new zms -n MyApp --TIsLib true --TIsCli true --TIsTest true --TUseDI true --TUseLog true
 
 # 最小：纯 CLI 应用
-dotnet new jm -n MyApp --TIsCli true
+dotnet new zms -n MyApp --TIsCli true
 ```
 
 ## 生成的项目

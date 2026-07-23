@@ -5,7 +5,7 @@
   "name": "开源项目模板",
   "description": "类库 + CLI/GUI 示例 + 测试的完整解决方案模板",
   "identity": "OpenSourceProjectTemplate",
-  "shortName": "jm",
+  "shortName": "zms",
   "sourceName": "MyApp",
   "preferNameDirectory": true,
   "tags": {

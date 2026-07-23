@@ -1,4 +1,3 @@
-using System.CommandLine;
 using MyApp.Cli.Options;
 
 public static class JankenCommand
@@ -7,10 +6,15 @@ public static class JankenCommand
 
     public static Option<Janken> HandOpt { get; } = new("--hand", "Your hand") { DefaultValueFactory = _ => Janken.Rock };
 
-    public static void Configure(Command cmd)
+    public static Command Cmd { get; } = Init(new Command("janken", "Rock-Paper-Scissors vs computer")
     {
-        cmd.Add(HandOpt);
+        HandOpt,
+    });
+
+    private static Command Init(Command cmd)
+    {
         cmd.SetAction(Execute);
+        return cmd;
     }
 
     private static void Execute(ParseResult ctx)
@@ -25,10 +29,16 @@ public static class JankenCommand
         Console.WriteLine($"  CPU: {emoji[cpuIdx]} {cpu}");
 
         if (playerIdx == cpuIdx)
+        {
             Console.WriteLine("  Result: Draw 😐");
+        }
         else if ((playerIdx + 1) % 3 == cpuIdx)
+        {
             Console.WriteLine("  Result: You win 🎉");
+        }
         else
+        {
             Console.WriteLine("  Result: You lose 😞");
+        }
     }
 }

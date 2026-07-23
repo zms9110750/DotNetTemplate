@@ -1,6 +1,3 @@
-using Photino.Blazor;
-using Microsoft.Extensions.DependencyInjection;
-
 namespace MyApp;
 
 class Program

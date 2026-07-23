@@ -1,30 +1,32 @@
-using System.CommandLine;
-
 public static class RandCommand
 {
     public static Option<int> MinOpt { get; } = new("--min", "Minimum value") { DefaultValueFactory = _ => 0 };
     public static Option<int> MaxOpt { get; } = new("--max", "Maximum value") { DefaultValueFactory = _ => 100 };
-    public static Option<int> CountOpt { get; } = new("--count", "Count of numbers (max 100)") { DefaultValueFactory = _ => 1 };
-
-    static RandCommand()
+    public static Option<int> CountOpt { get; } = new Option<int>("--count", "Count of numbers (max 100)")
     {
-        CountOpt.Validators.Add(result =>
+        DefaultValueFactory = _ => 1,
+        Validators =
         {
-            if (result.GetValueOrDefault<int>() > 100)
-                result.AddError("--count cannot exceed 100");
-        });
-    }
+            result =>
+            {
+                if (result.GetValueOrDefault<int>() > 100)
+                    result.AddError("--count cannot exceed 100");
+            }
+        }
+    };
 
-    public static void Configure(Command cmd)
+    public static Command Cmd { get; } = Init(new Command("rand", "生成随机数")
     {
-        cmd.Add(MinOpt);
-        cmd.Add(MaxOpt);
-        cmd.Add(CountOpt);
-        cmd.SetAction(Execute);
+        MinOpt,
+        MaxOpt,
+        CountOpt,
+        JankenCommand.Cmd,
+    });
 
-        var jankenCmd = new Command("janken", "Rock-Paper-Scissors vs computer");
-        JankenCommand.Configure(jankenCmd);
-        cmd.Add(jankenCmd);
+    private static Command Init(Command cmd)
+    {
+        cmd.SetAction(Execute);
+        return cmd;
     }
 
     private static void Execute(ParseResult ctx)
@@ -35,6 +37,8 @@ public static class RandCommand
         var rng = Random.Shared;
 
         for (int i = 0; i < count; i++)
+        {
             Console.WriteLine(rng.Next(min, max + 1));
+        }
     }
 }

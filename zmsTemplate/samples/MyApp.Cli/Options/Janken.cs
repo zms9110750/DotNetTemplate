@@ -1,5 +1,3 @@
-using MyApp.Cli.Options;
-
 namespace MyApp.Cli.Options;
 
 /// <summary>猜拳手形</summary>
