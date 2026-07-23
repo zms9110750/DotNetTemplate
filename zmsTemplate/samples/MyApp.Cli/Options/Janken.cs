@@ -2,15 +2,15 @@ using MyApp.Cli.Options;
 
 namespace MyApp.Cli.Options;
 
-/// <summary>Hand shapes for rock-paper-scissors</summary>
+/// <summary>猜拳手形</summary>
 public enum Janken
 {
-    /// <summary>Rock</summary>
+    /// <summary>石头</summary>
     Rock,
 
-    /// <summary>Scissors</summary>
+    /// <summary>剪刀</summary>
     Scissors,
 
-    /// <summary>Paper</summary>
+    /// <summary>布</summary>
     Paper
 }
