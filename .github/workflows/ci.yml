@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ "main", "master" ]
   push:
-    tags: [ "v*" ]
+    branches: [ "main", "master" ]
 
 jobs:
   validate:
@@ -76,14 +76,23 @@ jobs:
 
           Write-Host "✅ 版本号已从 $oldVersion 更新为 $newVersion"
 
-  pack:
-    if: startsWith(github.ref, 'refs/tags/v')
+  release:
+    if: github.event_name == 'push' && github.ref_name == 'master'
     needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read nuspec version
+        id: version
+        shell: pwsh
+        run: |
+          $v = Select-String -Path DotNetTemplate.nuspec -Pattern '<version>(.*?)</version>' |
+               ForEach-Object { $_.Matches.Groups[1].Value }
+          echo "ver=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "nuspec 版本: $v"
 
       - name: Pack
         shell: pwsh
@@ -102,8 +111,9 @@ jobs:
           dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -o out
           Remove-Item tmp.csproj -ErrorAction SilentlyContinue
 
-      - name: Upload to Release
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.ver }}
           files: out/*.nupkg
           generate_release_notes: true
