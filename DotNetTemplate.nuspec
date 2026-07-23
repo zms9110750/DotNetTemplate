@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>zms9110750.DotNetTemplate</id>
-    <version>0.1.0-a.0</version>
+    <version>0.1.0</version>
     <authors>zms9110750</authors>
     <description>zms9110750的项目模板</description>
     <packageTypes>
