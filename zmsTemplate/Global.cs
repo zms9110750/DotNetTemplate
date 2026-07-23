@@ -20,3 +20,14 @@ global using Axion.Extensions.Http.Resilience;
 #if USE_LOG
 global using Serilog;
 #endif
+
+// Project-type usings
+#if IS_CLI
+global using System.CommandLine;
+#endif
+#if IS_GUI
+global using Masa.Blazor;
+#endif
+#if IS_TEST
+global using Xunit;
+#endif

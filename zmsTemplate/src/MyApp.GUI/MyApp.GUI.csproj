@@ -12,6 +12,7 @@
 
   <PropertyGroup>
     <UseDI>true</UseDI>
+    <DefineConstants>$(DefineConstants);IS_GUI</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

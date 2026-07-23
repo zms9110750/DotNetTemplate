@@ -1,12 +1,16 @@
-// 猜拳选项
+using MyApp.Options;
+
+namespace MyApp.Options;
+
+/// <summary>Hand shapes for rock-paper-scissors</summary>
 public enum Janken
 {
-    /// <summary>石头（グー）</summary>
-    Guu,
+    /// <summary>Rock</summary>
+    Rock,
 
-    /// <summary>剪刀（チョキ）</summary>
-    Choki,
+    /// <summary>Scissors</summary>
+    Scissors,
 
-    /// <summary>布（パー）</summary>
-    Paa
+    /// <summary>Paper</summary>
+    Paper
 }

@@ -8,6 +8,7 @@
     <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
     <AssemblyName>$(Authors).$(MSBuildProjectName)</AssemblyName>
     <Description>Auto-generated test project</Description>
+    <DefineConstants>$(DefineConstants);IS_TEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

@@ -15,6 +15,10 @@
     <PackageTags></PackageTags>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);IS_LIB</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Content Include="Readme.md" Pack="true" PackagePath="\" />
   </ItemGroup>
