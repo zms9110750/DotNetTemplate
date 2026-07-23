@@ -1,12 +1,14 @@
-// 猜拳选项
+namespace MyApp.Cli.Options;
+
+/// <summary>猜拳手形</summary>
 public enum Janken
 {
-    /// <summary>石头（グー）</summary>
-    Guu,
+    /// <summary>石头</summary>
+    Rock,
 
-    /// <summary>剪刀（チョキ）</summary>
-    Choki,
+    /// <summary>剪刀</summary>
+    Scissors,
 
-    /// <summary>布（パー）</summary>
-    Paa
+    /// <summary>布</summary>
+    Paper
 }

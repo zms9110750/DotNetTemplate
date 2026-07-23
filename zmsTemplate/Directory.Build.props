@@ -32,9 +32,16 @@
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
+  <!-- ===== 程序集名与命名空间根 ===== -->
+  <PropertyGroup>
+    <RootNamespace Condition="'$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</RootNamespace>
+    <RootNamespace Condition="'$(Authors)' == ''">$(MSBuildProjectName)</RootNamespace>
+    <AssemblyName>$(RootNamespace)</AssemblyName>
+  </PropertyGroup>
+
   <!-- ===== InternalsVisibleTo：暴露给测试项目 ===== -->
   <ItemGroup Condition="'$(IsTest)' == 'true'">
-    <InternalsVisibleTo Include="$(Authors).$(MSBuildProjectName).Test" />
+    <InternalsVisibleTo Include="$(AssemblyName).Test" />
   </ItemGroup>
 
   <!-- ===== 条件包引用 ===== -->

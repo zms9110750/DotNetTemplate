@@ -1,14 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
-    <AssemblyName Condition="'$(Authors)' == ''">$(MSBuildProjectName)</AssemblyName>
-    <AssemblyName Condition="'$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</AssemblyName>
     <Description>Auto-generated CLI sample</Description>
+    <DefineConstants>$(DefineConstants);IS_CLI</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

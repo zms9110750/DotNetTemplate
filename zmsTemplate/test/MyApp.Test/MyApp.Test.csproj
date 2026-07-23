@@ -5,10 +5,8 @@
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
-    <AssemblyName Condition="'$(Authors)' == ''">$(MSBuildProjectName)</AssemblyName>
-    <AssemblyName Condition="'$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</AssemblyName>
     <Description>Auto-generated test project</Description>
+    <DefineConstants>$(DefineConstants);IS_TEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

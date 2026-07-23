@@ -60,7 +60,9 @@
 Tree/                     ← 镜像命令树层级
 ├── CliRoot.cs            ← 根命令，注册所有子命令
 ├── Rand/
-│   └── RandCommand.cs    ← rand 子命令：生成随机数
+│   ├── RandCommand.cs    ← rand 子命令：生成随机数
+│   └── Janken/
+│       └── JankenCommand.cs  ← rand janken 子命令：猜拳
 ├── Hello/
 │   └── HelloCommand.cs   ← hello 子命令：输出问候语
 ```
@@ -75,7 +77,7 @@ Tree/                     ← 镜像命令树层级
 |------|------|------|
 | `（无子命令）` | `[items...]`（可选） | 逐行输出所有参数值 |
 | `rand` | `--min`（默认 0）、`--max`（默认 100）、`--count`（默认 1，上限 100） | 生成指定数量的随机整数 |
-| `rand janken` | `--hand`（可选，Guu/Choki/Paa，默认 Guu） | 与电脑猜拳 |
+| `rand janken` | `--hand`（可选，Rock/Scissors/Paper，默认 Rock） | 与电脑猜拳 |
 | `hello` | `<name>`（必填） | 输出 `hello <name>` |
 //#endif
 
@@ -398,3 +400,4 @@ GitHub Actions CI 在 `v*` 标签推送时自动构建并发布以下产物：
 - **.NET Framework**（net472/net48 等）：CI 运行在 Linux runner 上，不支持发布基于 Framework 的项目。如果你的项目必须发布 .NET Framework 版本，请在 Windows runner 上自行构建
 - **自包含发布的目标框架**：CI 的 `Get-Highest` 函数自动选择项目中的最高 TFM（如 net6.0;net8.0;net9.0 选 net9.0）。如需发布特定 TFM 的自包含包，请调整 `TargetFrameworks` 或手动构建
 - **Linux x86-32**：.NET 6 起已移除对 32 位 Linux 的官方支持，本 CI 不提供 `linux-x86` RID
+- **预览版目标框架**：CI 默认安装当年 GA 版的 .NET SDK。若你的项目使用了尚未正式发布的 TFM（如 net11.0 在 2026 年），会导致编译/打包失败。请等待 SDK GA 或手动指定 `dotnet-version`

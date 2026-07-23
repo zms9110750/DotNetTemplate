@@ -1,16 +1,20 @@
-using System.CommandLine;
-
 public static class HelloCommand
 {
-    public static void Configure(Command cmd)
+    public static Argument<string> NameArg { get; } = new("name") { Description = "Your name" };
+
+    public static Command Cmd { get; } = Init(new Command("hello", "输出问候语")
     {
-        var nameArg = new Argument<string>("name") { Description = "你的名字" };
-        cmd.Add(nameArg);
-        cmd.SetAction(ctx => Execute(ctx, nameArg));
+        NameArg,
+    });
+
+    private static Command Init(Command cmd)
+    {
+        cmd.SetAction(Execute);
+        return cmd;
     }
 
-    private static void Execute(ParseResult ctx, Argument<string> nameArg)
+    private static void Execute(ParseResult ctx)
     {
-        Console.WriteLine($"hello {ctx.GetValue(nameArg)}");
+        Console.WriteLine($"hello {ctx.GetValue(NameArg)}");
     }
 }
