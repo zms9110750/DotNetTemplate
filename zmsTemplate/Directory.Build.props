@@ -32,16 +32,12 @@
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
-  <!-- ===== 程序集名与命名空间根（生成的项目 + 用户自定义项目的默认值） ===== -->
-  <!-- 有 ProjectType 且有作者：作者.项目名  -->
-  <!-- 否则（自定义项目或无作者）：项目名 -->
+  <!-- ===== 程序集名与命名空间根 ===== -->
   <PropertyGroup>
-    <!-- 有 ProjectType → 带作者前缀 -->
-    <RootNamespace Condition="'$(ProjectType)' != '' And '$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</RootNamespace>
-    <AssemblyName Condition="'$(ProjectType)' != '' And '$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</AssemblyName>
-    <!-- 无 ProjectType 或空作者 → 纯项目名 -->
-    <RootNamespace Condition="'$(ProjectType)' == '' Or '$(Authors)' == ''">$(MSBuildProjectName)</RootNamespace>
-    <AssemblyName Condition="'$(ProjectType)' == '' Or '$(Authors)' == ''">$(MSBuildProjectName)</AssemblyName>
+    <RootNamespace Condition="'$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</RootNamespace>
+    <RootNamespace Condition="'$(Authors)' == ''">$(MSBuildProjectName)</RootNamespace>
+    <AssemblyName Condition="'$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</AssemblyName>
+    <AssemblyName Condition="'$(Authors)' == ''">$(MSBuildProjectName)</AssemblyName>
   </PropertyGroup>
 
   <!-- ===== InternalsVisibleTo：暴露给测试项目 ===== -->
