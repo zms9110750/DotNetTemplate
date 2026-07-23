@@ -1,5 +1,5 @@
 using System.CommandLine;
-using MyApp.Options;
+using MyApp.Cli.Options;
 
 public static class RandCommand
 {

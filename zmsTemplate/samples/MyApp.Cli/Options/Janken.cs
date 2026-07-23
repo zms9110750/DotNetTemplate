@@ -1,6 +1,6 @@
-using MyApp.Options;
+using MyApp.Cli.Options;
 
-namespace MyApp.Options;
+namespace MyApp.Cli.Options;
 
 /// <summary>Hand shapes for rock-paper-scissors</summary>
 public enum Janken
