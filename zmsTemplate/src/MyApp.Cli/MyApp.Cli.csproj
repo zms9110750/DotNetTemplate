@@ -6,7 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
-    <AssemblyName>$(Authors).$(MSBuildProjectName)</AssemblyName>
+    <AssemblyName Condition="'$(Authors)' == ''">$(MSBuildProjectName)</AssemblyName>
+    <AssemblyName Condition="'$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</AssemblyName>
     <Description>Auto-generated CLI sample (no-lib mode)</Description>
   </PropertyGroup>
 

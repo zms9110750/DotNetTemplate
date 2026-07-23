@@ -6,7 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
-    <AssemblyName>$(Authors).$(MSBuildProjectName)</AssemblyName>
+    <AssemblyName Condition="'$(Authors)' == ''">$(MSBuildProjectName)</AssemblyName>
+    <AssemblyName Condition="'$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</AssemblyName>
     <Description>Auto-generated GUI sample (no-lib mode)</Description>
   </PropertyGroup>
 
@@ -27,7 +28,7 @@
 
   <Target Name="CheckPhotinoFramework" BeforeTargets="CoreCompile"
           Condition="'$(TargetFramework)' != 'net8.0' And '$(TargetFramework)' != 'net9.0' And '$(TargetFramework)' != 'net10.0'">
-    <Error Text="PhotinoX.Blazor 当前仅支持 net8.0/net9.0/net10.0。当前目标: $(TargetFramework)。请调整 TargetFramework 或更新 PhotinoX.Blazor。" />
+    <Error Text="PhotinoX.Blazor 褰撳墠浠呮敮鎸?net8.0/net9.0/net10.0銆傚綋鍓嶇洰鏍? $(TargetFramework)銆傝璋冩暣 TargetFramework 鎴栨洿鏂?PhotinoX.Blazor銆? />
   </Target>
 
 </Project>

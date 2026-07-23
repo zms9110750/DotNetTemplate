@@ -56,7 +56,7 @@ jobs:
             return @{ Family = "unknown"; Major = 0; Minor = 0 }
           }
 
-          $exes = @(); $libs = @(); $allTfms = @{}
+          $exes = @(); $libs = @(); $allTfms = New-Object System.Collections.Generic.List[string]
           Get-ChildItem -Recurse -Filter "*.csproj" | ForEach-Object {
             $content = Get-Content $_.FullName -Raw
             $isTest = $content -match '(Microsoft\.NET\.Test\.Sdk|MSTest|NUnit|xunit\.v3\.mtp-v2|xunit|TestingPlatformDotnetTestSupport)'
@@ -69,7 +69,7 @@ jobs:
                      else { "" }
 
             $frameworks = $tfStr.Split(';', [StringSplitOptions]::RemoveEmptyEntries)
-            foreach ($fw in $frameworks) { $allTfms[$fw] = $true; }
+            foreach ($fw in $frameworks) { if ($fw -and -not $allTfms.Contains($fw)) { $allTfms.Add($fw) } }
 
             if ($outType -eq "Exe" -or $outType -eq "WinExe") {
               $exes += [PSCustomObject]@{
@@ -84,7 +84,8 @@ jobs:
 
           $exeJson = $exes | ConvertTo-Json -Compress -Depth 3
           $libJson = $libs | ConvertTo-Json -Compress
-          $tfmJson = ($allTfms.Keys | Sort-Object) | ConvertTo-Json -Compress
+          $tfmArr = $allTfms | Sort-Object | ForEach-Object { '"' + $_ + '"' }
+          $tfmJson = "[" + ($tfmArr -join ',') + "]"
 
           $delim = "EOF_$([System.Guid]::NewGuid().ToString('N'))"
           "exe_json<<$delim" >> $env:GITHUB_OUTPUT; $exeJson >> $env:GITHUB_OUTPUT; $delim >> $env:GITHUB_OUTPUT
