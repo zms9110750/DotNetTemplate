@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ "main", "master" ]
   push:
-    tags: [ "v*" ]
+    branches: [ "main", "master" ]
 
 jobs:
   validate:
@@ -51,14 +51,48 @@ jobs:
           }
           Write-Host "`n✅ 所有模板均在 nuspec 覆盖范围内"
 
-  pack:
-    if: startsWith(github.ref, 'refs/tags/v')
+      - name: Check nuspec version bumped
+        shell: pwsh
+        run: |
+          $baseSha = "${{ github.event.pull_request.base.sha }}"
+          if (-not $baseSha) { Write-Host "⏭️ 非 PR 事件，跳过"; exit 0 }
+
+          $oldNuspec = git show "$baseSha:DotNetTemplate.nuspec"
+          $oldVersion = $oldNuspec | Select-String '<version>(.*?)</version>' | ForEach-Object { $_.Matches.Groups[1].Value }
+          $newVersion = Select-String -Path DotNetTemplate.nuspec -Pattern '<version>(.*?)</version>' | ForEach-Object { $_.Matches.Groups[1].Value }
+
+          Write-Host "旧版本: $oldVersion"
+          Write-Host "新版本: $newVersion"
+
+          if (-not $oldVersion -or -not $newVersion) {
+            Write-Host "❌ 未能提取到有效的版本号，请检查 DotNetTemplate.nuspec 中 <version> 标签是否存在。"
+            exit 1
+          }
+
+          if ($oldVersion -eq $newVersion) {
+            Write-Host "❌ DotNetTemplate.nuspec 的版本号未更新。请更新 <version> 后再合并。"
+            exit 1
+          }
+
+          Write-Host "✅ 版本号已从 $oldVersion 更新为 $newVersion"
+
+  release:
+    if: github.event_name == 'push' && github.ref_name == 'master'
     needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read nuspec version
+        id: version
+        shell: pwsh
+        run: |
+          $v = Select-String -Path DotNetTemplate.nuspec -Pattern '<version>(.*?)</version>' |
+               ForEach-Object { $_.Matches.Groups[1].Value }
+          echo "ver=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "nuspec 版本: $v"
 
       - name: Pack
         shell: pwsh
@@ -77,8 +111,9 @@ jobs:
           dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -o out
           Remove-Item tmp.csproj -ErrorAction SilentlyContinue
 
-      - name: Upload to Release
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.ver }}
           files: out/*.nupkg
           generate_release_notes: true
