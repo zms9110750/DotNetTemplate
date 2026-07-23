@@ -51,19 +51,11 @@ jobs:
           }
           Write-Host "`n✅ 所有模板均在 nuspec 覆盖范围内"
 
-      - name: Check version bump when template config changes
+      - name: Check nuspec version bumped
         shell: pwsh
         run: |
           $baseSha = "${{ github.event.pull_request.base.sha }}"
           if (-not $baseSha) { Write-Host "⏭️ 非 PR 事件，跳过"; exit 0 }
-
-          $changedFiles = git diff --name-only "$baseSha...$env:GITHUB_SHA"
-          $templateConfigChanged = $changedFiles | Where-Object { $_ -match '^zmsTemplate/\.template\.config/' }
-
-          if (-not $templateConfigChanged) {
-            Write-Host "⏭️ 模板配置文件未变更，跳过版本检查"
-            exit 0
-          }
 
           $oldNuspec = git show "$baseSha:DotNetTemplate.nuspec"
           $oldVersion = $oldNuspec | Select-String '<version>(.*?)</version>' | ForEach-Object { $_.Matches.Groups[1].Value }
@@ -72,16 +64,17 @@ jobs:
           Write-Host "旧版本: $oldVersion"
           Write-Host "新版本: $newVersion"
 
-          if ($oldVersion -eq $newVersion) {
-            if (-not $oldVersion -or -not $newVersion) {
-              Write-Host "❌ 未能提取到有效的版本号，请检查 DotNetTemplate.nuspec 中 <version> 标签是否存在。"
-            } else {
-              Write-Host "❌ template.json 已变更，但 DotNetTemplate.nuspec 的版本号未更新。请更新 <version> 后再合并。"
-            }
+          if (-not $oldVersion -or -not $newVersion) {
+            Write-Host "❌ 未能提取到有效的版本号，请检查 DotNetTemplate.nuspec 中 <version> 标签是否存在。"
             exit 1
           }
 
-          Write-Host "✅ 模板版本号已从 $oldVersion 更新为 $newVersion"
+          if ($oldVersion -eq $newVersion) {
+            Write-Host "❌ DotNetTemplate.nuspec 的版本号未更新。请更新 <version> 后再合并。"
+            exit 1
+          }
+
+          Write-Host "✅ 版本号已从 $oldVersion 更新为 $newVersion"
 
   pack:
     if: startsWith(github.ref, 'refs/tags/v')
