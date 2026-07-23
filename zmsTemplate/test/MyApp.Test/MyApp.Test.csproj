@@ -3,10 +3,9 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
+    <ProjectType>test</ProjectType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
-    <AssemblyName>$(Authors).$(MSBuildProjectName)</AssemblyName>
     <Description>Auto-generated test project</Description>
     <DefineConstants>$(DefineConstants);IS_TEST</DefineConstants>
   </PropertyGroup>

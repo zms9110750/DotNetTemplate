@@ -3,10 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>net10.0</TargetFrameworks>
     <OutputType>Library</OutputType>
+    <ProjectType>lib</ProjectType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>$(Authors).$([System.String]::Copy('$(MSBuildProjectName)').Replace(' ','_'))</RootNamespace>
-    <AssemblyName>$(Authors).$(MSBuildProjectName)</AssemblyName>
     <Description>Auto-generated library project</Description>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Title></Title>
