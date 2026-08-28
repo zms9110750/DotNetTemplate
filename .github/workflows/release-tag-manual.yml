@@ -1,0 +1,66 @@
+name: Release from Tag / Manual
+
+on:
+  # 本地打 vX.Y.Z[-pre][+meta] 格式 tag 触发
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  # 网页按钮手动填版本
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号，如 1.2.3 或 1.2.3-beta.1（不要带 v）'
+        required: true
+        type: string
+
+permissions:
+  contents: write    # 打 tag / 建 Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 确定版本号：tag 触发取 tag 名去 v；手动触发取输入
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $v = "${{ inputs.version }}"
+          } else {
+            $v = "${{ github.ref_name }}" -replace '^v', ''
+          }
+          # 校验版本格式: X.Y.Z[-pre][+meta]，标识符只能 [0-9A-Za-z-.]（不能中文）
+          if ($v -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$') {
+            Write-Host "❌ 非法版本号: $v（需 X.Y.Z[-pre][+meta]，不能含中文）"
+            exit 1
+          }
+          echo "ver=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "✅ 版本: $v"
+
+      - name: Pack
+        shell: pwsh
+        run: |
+          @"
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net10.0</TargetFramework>
+              <IncludeBuildOutput>false</IncludeBuildOutput>
+              <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+              <NoDefaultExcludes>true</NoDefaultExcludes>
+            </PropertyGroup>
+          </Project>
+          "@ | Out-File -Encoding utf8 tmp.csproj
+          dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -p:Version="${{ steps.version.outputs.ver }}" -o out
+          Remove-Item tmp.csproj -ErrorAction SilentlyContinue
+
+      # 建 draft Release（自动创建 tag），你确认后才公开
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.ver }}
+          files: out/*.nupkg
+          draft: true
+          generate_release_notes: true
