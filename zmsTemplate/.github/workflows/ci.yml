@@ -306,7 +306,8 @@ jobs:
           path: publish/*.zip
 
   pack:
-    if: needs.build.outputs.should_release == 'true'
+    # 版本非空：PR 合并+里程碑非法时 bver 输出空版本，不发包（避免产 1.0.0 垃圾 artifact）
+    if: needs.build.outputs.should_release == 'true' && needs.build.outputs.version != ''
     needs: build
     runs-on: ubuntu-latest
     steps:

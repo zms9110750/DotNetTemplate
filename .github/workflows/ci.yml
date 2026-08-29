@@ -206,7 +206,7 @@ jobs:
           </Project>
           "@ | Out-File -Encoding utf8 tmp.csproj
           New-Item -ItemType Directory -Path publish -Force | Out-Null
-          dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -p:Version="${{ steps.rtag.outputs.tag }}" -o publish
+          dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -p:Version="${{ needs.build.outputs.version }}" -o publish
           Remove-Item tmp.csproj -ErrorAction SilentlyContinue
 
       - uses: softprops/action-gh-release@v2
