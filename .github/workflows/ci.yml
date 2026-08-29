@@ -1,0 +1,449 @@
+# CI workflow — DotNetTemplate 仓库自身（模板源）
+# 与 zmsTemplate/.github/workflows/ci.yml 语义一致，但打包用 nuspec（无矩阵 publish、无 test）
+# 触发：PR（验证+预览包）/ issue_comment（repack）/ push tag v*（发版）/ 网页按钮（发版）
+# 发版产物：草稿 Release（需手动 Publish 才公开）
+name: CI
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+    types: [ "opened", "synchronize", "reopened", "closed" ]
+  issue_comment:
+    types: [ "created" ]
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "发版版本号（如 1.2.3）。留空则用 nuspec 中的版本。"
+        required: false
+        type: string
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+jobs:
+  build:
+    if: github.event_name != 'issue_comment'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bver.outputs.version }}
+      should_release: ${{ steps.relflag.outputs.should_release }}
+    steps:
+      - name: Determine .NET version
+        id: dotver
+        shell: pwsh
+        run: |
+          $year = [System.DateTime]::UtcNow.Year
+          $ver = "$($year - 2016).0.x"
+          "version=$ver" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ steps.dotver.outputs.version }}
+          dotnet-quality: ga
+
+      - run: dotnet restore
+
+      - name: Resolve build version
+        id: bver
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          $input = "${{ github.event.inputs.version }}".Trim()
+          $ver = ""
+          if ($input -ne "") {
+            # 网页按钮填了版本 → 用它（去掉 v 前缀，纯版本号）
+            $ver = $input.TrimStart('v')
+          } elseif ($env:EVENT_NAME -eq "workflow_dispatch") {
+            # 网页按钮没填 → 从 nuspec 读版本
+            $props = Get-Content DotNetTemplate.nuspec -Raw
+            if ($props -match '<version>([^<]+)</version>') { $ver = $Matches[1] }
+          } elseif ($env:EVENT_NAME -eq "push") {
+            # tag 触发 → ref_name 是 v1.2.3，去 v 前缀
+            $ver = "${{ github.ref_name }}".TrimStart('v')
+          } elseif ($env:EVENT_NAME -eq "pull_request") {
+            # PR 合并发版 → 用里程碑版本（与 rtag 一致）
+            $milestone = "${{ github.event.pull_request.milestone.title }}".Trim()
+            if ($milestone -match '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+              $ver = $milestone.TrimStart('v')
+            }
+          }
+          if (-not $ver) { throw "无法解析版本：该触发器必须提供版本（PR 合并需合法里程碑 / tag / 网页按钮）" }
+          "version=$ver" >> $env:GITHUB_OUTPUT
+          Write-Host "build version: $ver"
+
+      - name: Compute release flag
+        id: relflag
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+        run: |
+          # 是否发版：tag push / 网页按钮 / PR 合并（里程碑）都发；普通 PR 验证不发
+          $rel = "false"
+          if ($env:EVENT_NAME -eq "push" -and $env:GITHUB_REF -like "refs/tags/v*") {
+            $rel = "true"
+          } elseif ($env:EVENT_NAME -eq "workflow_dispatch") {
+            $rel = "true"
+          } elseif ($env:EVENT_NAME -eq "pull_request" -and $env:PR_MERGED -eq "true") {
+            $rel = "true"
+          }
+          "should_release=$rel" >> $env:GITHUB_OUTPUT
+          Write-Host "should_release: $rel"
+
+  release:
+    if: needs.build.outputs.should_release == 'true'
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # PR 合并发版时 tag 要打在真实合并提交上（squash/merge/rebase 都正确），
+          # 避免打到 GitHub 预生成的 refs/pull/N/merge 临时提交（孤儿 tag）
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+
+      - name: Show trigger info
+        shell: pwsh
+        run: |
+          Write-Host "=== 触发信息 ==="
+          Write-Host "event_name      : ${{ github.event_name }}"
+          Write-Host "ref             : ${{ github.ref }}"
+          Write-Host "ref_name        : ${{ github.ref_name }}"
+          Write-Host "actor           : ${{ github.actor }}"
+          Write-Host "sha             : ${{ github.sha }}"
+          Write-Host "base_ref        : ${{ github.base_ref }}"
+          Write-Host "head_ref        : ${{ github.head_ref }}"
+          Write-Host "================="
+
+      - name: Resolve release tag
+        id: rtag
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          MILESTONE: ${{ github.event.pull_request.milestone.title }}
+        run: |
+          if ($env:EVENT_NAME -eq "pull_request" -and $env:PR_MERGED -eq "true") {
+            # PR 合并发版：里程碑 vX.Y.Z → 抢占唯一 tag vX.Y.Z-build.{N}
+            # 用 git push 做原子裁决（CAS）：同号只有一个 run 能 push 成功，输家 +1 重试
+            # GITHUB_TOKEN push 的 tag 不会触发 push:tags CI（GitHub 防递归），无死循环
+            $milestone = $env:MILESTONE.Trim()
+            if ($milestone -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+              Write-Host "里程碑必须是 vX.Y.Z（如 v0.2.0），当前：'$milestone'，跳过发版"
+              "skip=true" >> $env:GITHUB_OUTPUT
+              exit 0
+            }
+            $ver = $milestone.TrimStart('v')
+            $n = 0
+            $pushed = $false
+            while ($n -lt 100) {
+              $tag = "v${ver}-build.$n"
+              git tag -d $tag 2>$null | Out-Null
+              git tag $tag
+              git push origin $tag 2>&1 | Out-Null
+              if ($LASTEXITCODE -eq 0) { $pushed = $true; break }
+              $n++
+            }
+            if (-not $pushed) { throw "无法获取唯一 tag（尝试 100 个 build 号均被占用）" }
+            Write-Host "抢占成功：里程碑 $milestone → $tag"
+          } else {
+            # tag push / dispatch：直接 v{版本}
+            $ver = "${{ needs.build.outputs.version }}"
+            $tag = "v$ver"
+            Write-Host "release tag: $tag"
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Skip if release exists
+        id: skip
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.rtag.outputs.tag }}
+          RTAG_SKIP: ${{ steps.rtag.outputs.skip }}
+        run: |
+          if ($env:RTAG_SKIP -eq "true") {
+            Write-Host "里程碑非法，跳过发版"
+            "skipped=true" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          # 该 tag 已有任何 Release（草稿或已发布）→ 跳过。
+          # 防死循环：发布草稿 → 触发 CI → 再次触发时发现已存在 → 不再建草稿/覆盖已发布的。
+          gh release view "$env:TAG" --repo ${{ github.repository }} --json id 2>&1 | Out-Null
+          $exists = $LASTEXITCODE -eq 0
+          if ($exists) {
+            Write-Host "tag $env:TAG 已有 Release，跳过（防重复发版/覆盖）"
+            "skipped=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "tag $env:TAG 无 Release，继续发版"
+            "skipped=false" >> $env:GITHUB_OUTPUT
+          }
+          # gh 失败会残留 $LASTEXITCODE=1 → 显式成功退出，避免步骤被误判失败
+          exit 0
+
+      - name: Pack nuspec
+        if: steps.skip.outputs.skipped != 'true'
+        shell: pwsh
+        run: |
+          @"
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net10.0</TargetFramework>
+              <IncludeBuildOutput>false</IncludeBuildOutput>
+              <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+              <NoDefaultExcludes>true</NoDefaultExcludes>
+            </PropertyGroup>
+          </Project>
+          "@ | Out-File -Encoding utf8 tmp.csproj
+          New-Item -ItemType Directory -Path publish -Force | Out-Null
+          dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -p:Version="${{ steps.rtag.outputs.tag }}" -o publish
+          Remove-Item tmp.csproj -ErrorAction SilentlyContinue
+
+      - uses: softprops/action-gh-release@v2
+        if: steps.skip.outputs.skipped != 'true'
+        with:
+          tag_name: ${{ steps.rtag.outputs.tag }}
+          files: "publish/*"
+          draft: true
+          generate_release_notes: true
+
+  # PR 预览：PR 打开/更新时打包 nuspec，评论附下载链接
+  pr-preview:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Determine .NET version
+        id: dotver
+        shell: pwsh
+        run: |
+          $year = [System.DateTime]::UtcNow.Year
+          $ver = "$($year - 2016).0.x"
+          "version=$ver" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ steps.dotver.outputs.version }}
+          dotnet-quality: ga
+
+      - run: dotnet restore
+
+      - name: Pack PR preview
+        shell: pwsh
+        env:
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          $sha7 = "${{ github.event.pull_request.head.sha }}".Substring(0, 7)
+          $ver = "0.0.0-pr.$env:PR_NUM.$sha7"
+          @"
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net10.0</TargetFramework>
+              <IncludeBuildOutput>false</IncludeBuildOutput>
+              <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+              <NoDefaultExcludes>true</NoDefaultExcludes>
+            </PropertyGroup>
+          </Project>
+          "@ | Out-File -Encoding utf8 tmp.csproj
+          New-Item -ItemType Directory -Path publish -Force | Out-Null
+          dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -p:Version=$ver -o publish
+          Remove-Item tmp.csproj -ErrorAction SilentlyContinue
+          "ver=$ver" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nupkg-pr-${{ github.event.pull_request.number }}
+          path: publish/*
+          if-no-files-found: error
+
+      - name: Comment PR with download link
+        if: github.event.action == 'opened' || github.event.action == 'reopened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo } = context;
+            const pr = context.payload.pull_request.number;
+            const sha7 = context.payload.pull_request.head.sha.slice(0, 7);
+
+            // 查当前 run 的 artifact，生成可点击下载链接
+            const runId = context.runId;
+            const arts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: repo.owner, repo: repo.repo, run_id: runId,
+            });
+            const links = arts.data.artifacts.map(a =>
+              `- [${a.name}](https://github.com/${repo.owner}/${repo.repo}/actions/runs/${runId}/artifacts/${a.id}) (${(a.size_in_bytes/1024).toFixed(1)} KB)`
+            ).join('\n') || '（无 artifact）';
+
+            const body = [
+              `## 📦 PR 预览包已生成 / PR Preview package ready`,
+              ``,
+              `- 版本 / Version：\`0.0.0-pr.${pr}.${sha7}\``,
+              `- 下载 / Download：`,
+              links,
+              ``,
+              `> 需要重新打包？评论回复 \`@github-actions[bot] pack ${sha7}\``,
+              `> Need to rebuild? Reply with \`@github-actions[bot] pack ${sha7}\``,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: repo.owner, repo: repo.repo, issue_number: pr, body,
+            });
+
+  # 重新打包：PR 评论 @github-actions[bot] pack <sha7>
+  repack:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@github-actions[bot] pack')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Parse pack command
+        id: parse
+        shell: pwsh
+        env:
+          BODY: ${{ github.event.comment.body }}
+          PR_NUM: ${{ github.event.issue.number }}
+        run: |
+          # 提取 @github-actions[bot] pack <sha7>
+          $m = [regex]::Match($env:BODY, '@github-actions\[bot\]\s+pack\s+([0-9a-f]{7})')
+          if (-not $m.Success) {
+            Write-Host "未匹配到 pack 命令"
+            "valid=false" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          $sha7 = $m.Groups[1].Value
+          "valid=true" >> $env:GITHUB_OUTPUT
+          "sha7=$sha7" >> $env:GITHUB_OUTPUT
+          "pr=$env:PR_NUM" >> $env:GITHUB_OUTPUT
+
+      - name: Verify sha7 in PR commits
+        if: steps.parse.outputs.valid == 'true'
+        id: verify
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo } = context;
+            const pr = context.payload.issue.number;
+            const sha7 = process.env.SHA7;
+            // 取 PR 全部提交（分页），检查 sha7 是否是其中某次提交的前缀
+            let found = null;
+            let page = 1;
+            while (true) {
+              const res = await github.rest.pulls.listCommits({
+                owner: repo.owner, repo: repo.repo, pull_number: pr, per_page: 100, page,
+              });
+              if (res.data.length === 0) break;
+              for (const c of res.data) {
+                if (c.sha.startsWith(sha7)) { found = c.sha; break; }
+              }
+              if (found) break;
+              if (res.data.length < 100) break;
+              page++;
+            }
+            core.setOutput('full_sha', found || '');
+        env:
+          SHA7: ${{ steps.parse.outputs.sha7 }}
+
+      - name: Reply sha not in PR
+        if: steps.verify.outputs.full_sha == ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo, issue } = context;
+            await github.rest.issues.createComment({
+              owner: repo.owner, repo: repo.repo, issue_number: issue.number,
+              body: `❌ \`${process.env.SHA7}\` 不是本 PR 的提交 / is not a commit in this PR. 请从本 PR 的 Commits 列表复制 sha 前缀。Please copy the sha prefix from this PR's Commits tab.`,
+            });
+        env:
+          SHA7: ${{ steps.parse.outputs.sha7 }}
+
+      - name: Determine .NET version
+        if: steps.verify.outputs.full_sha != ''
+        id: dotver
+        shell: pwsh
+        run: |
+          $year = [System.DateTime]::UtcNow.Year
+          $ver = "$($year - 2016).0.x"
+          "version=$ver" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/checkout@v4
+        if: steps.verify.outputs.full_sha != ''
+        with:
+          ref: ${{ steps.verify.outputs.full_sha }}
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.verify.outputs.full_sha != ''
+        with:
+          dotnet-version: ${{ steps.dotver.outputs.version }}
+          dotnet-quality: ga
+
+      - name: Pack requested sha
+        if: steps.verify.outputs.full_sha != ''
+        shell: pwsh
+        env:
+          PR_NUM: ${{ steps.parse.outputs.pr }}
+          SHA7: ${{ steps.parse.outputs.sha7 }}
+        run: |
+          $ver = "0.0.0-pr.$env:PR_NUM.$env:SHA7"
+          @"
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net10.0</TargetFramework>
+              <IncludeBuildOutput>false</IncludeBuildOutput>
+              <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+              <NoDefaultExcludes>true</NoDefaultExcludes>
+            </PropertyGroup>
+          </Project>
+          "@ | Out-File -Encoding utf8 tmp.csproj
+          New-Item -ItemType Directory -Path publish -Force | Out-Null
+          dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -p:Version=$ver -o publish
+          Remove-Item tmp.csproj -ErrorAction SilentlyContinue
+          "ver=$ver" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        if: steps.verify.outputs.full_sha != ''
+        with:
+          name: nupkg-pr-${{ steps.parse.outputs.pr }}-${{ steps.parse.outputs.sha7 }}
+          path: publish/*
+          if-no-files-found: error
+
+      - name: Reply with download link
+        if: steps.verify.outputs.full_sha != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo, issue } = context;
+            const runId = context.runId;
+            const pr = context.payload.issue.number;
+            const sha7 = context.payload.comment.body.match(/pack\s+([0-9a-f]{7})/)[1];
+            const arts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: repo.owner, repo: repo.repo, run_id: runId,
+            });
+            const links = arts.data.artifacts.map(a =>
+              `- [${a.name}](https://github.com/${repo.owner}/${repo.repo}/actions/runs/${runId}/artifacts/${a.id}) (${(a.size_in_bytes/1024).toFixed(1)} KB)`
+            ).join('\n');
+            await github.rest.issues.createComment({
+              owner: repo.owner, repo: repo.repo, issue_number: pr,
+              body: [
+                `## 🔄 已按请求重新打包 / Rebuilt on request`,
+                ``,
+                `- 版本 / Version：\`0.0.0-pr.${pr}.${sha7}\``,
+                `- 下载 / Download：`,
+                links,
+              ].join('\n'),
+            });
