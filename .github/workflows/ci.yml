@@ -85,15 +85,22 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           PR_MERGED: ${{ github.event.pull_request.merged }}
+          MILESTONE: ${{ github.event.pull_request.milestone.title }}
         run: |
-          # 是否发版：tag push / 网页按钮 / PR 合并（里程碑）都发；普通 PR 验证不发
+          # 是否发版：tag push / 网页按钮 / PR 合并（合法里程碑）都发；普通 PR 验证不发
           $rel = "false"
           if ($env:EVENT_NAME -eq "push" -and $env:GITHUB_REF -like "refs/tags/v*") {
             $rel = "true"
           } elseif ($env:EVENT_NAME -eq "workflow_dispatch") {
             $rel = "true"
           } elseif ($env:EVENT_NAME -eq "pull_request" -and $env:PR_MERGED -eq "true") {
-            $rel = "true"
+            # PR 合并发版必须带合法里程碑 vX.Y.Z，否则不发版（源头拦截，避免后续空跑）
+            $milestone = $env:MILESTONE.Trim()
+            if ($milestone -match '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+              $rel = "true"
+            } else {
+              Write-Host "里程碑非法/缺失：'$milestone'，不发版"
+            }
           }
           "should_release=$rel" >> $env:GITHUB_OUTPUT
           Write-Host "should_release: $rel"

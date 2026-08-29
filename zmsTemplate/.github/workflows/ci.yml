@@ -1,6 +1,6 @@
-# CI workflow ¡ª ´ò°ü + ·¢°æ
-# ´¥·¢£ºPR£¨ÑéÖ¤£©/ push tag v*£¨·¢°æ£©/ ÍøÒ³°´Å¥£¨·¢°æ£©
-# ·¢°æ²úÎï£º²İ¸å Release£¨ĞèÊÖ¶¯ Publish ²Å¹«¿ª£©
+# CI workflow â€” æ‰“åŒ… + å‘ç‰ˆ
+# è§¦å‘ï¼šPRï¼ˆéªŒè¯ï¼‰/ push tag v*ï¼ˆå‘ç‰ˆï¼‰/ ç½‘é¡µæŒ‰é’®ï¼ˆå‘ç‰ˆï¼‰
+# å‘ç‰ˆäº§ç‰©ï¼šè‰ç¨¿ Releaseï¼ˆéœ€æ‰‹åŠ¨ Publish æ‰å…¬å¼€ï¼‰
 name: CI
 
 on:
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "·¢°æ°æ±¾ºÅ£¨Èç 1.2.3£©¡£Áô¿ÕÔòÓÃ Directory.Build.props ÖĞµÄ°æ±¾¡£"
+        description: "å‘ç‰ˆç‰ˆæœ¬å·ï¼ˆå¦‚ 1.2.3ï¼‰ã€‚ç•™ç©ºåˆ™ç”¨ Directory.Build.props ä¸­çš„ç‰ˆæœ¬ã€‚"
         required: false
         type: string
 
@@ -59,25 +59,25 @@ jobs:
           $input = "${{ github.event.inputs.version }}".Trim()
           $ver = ""
           if ($input -ne "") {
-            # ÍøÒ³°´Å¥ÌîÁË°æ±¾ ¡ú ÓÃËü£¨È¥µô v Ç°×º£¬´¿°æ±¾ºÅ£©
+            # ç½‘é¡µæŒ‰é’®å¡«äº†ç‰ˆæœ¬ â†’ ç”¨å®ƒï¼ˆå»æ‰ v å‰ç¼€ï¼Œçº¯ç‰ˆæœ¬å·ï¼‰
             $ver = $input.TrimStart('v')
           } elseif ($env:EVENT_NAME -eq "workflow_dispatch") {
-            # ÍøÒ³°´Å¥Ã»Ìî ¡ú ´Ó Directory.Build.props ¶Á°æ±¾
+            # ç½‘é¡µæŒ‰é’®æ²¡å¡« â†’ ä» Directory.Build.props è¯»ç‰ˆæœ¬
             $props = Get-Content Directory.Build.props -Raw
             if ($props -match '<Version>([^<]+)</Version>') { $ver = $Matches[1] }
           } elseif ($env:EVENT_NAME -eq "push") {
-            # tag ´¥·¢ ¡ú ref_name ÊÇ v1.2.3£¬È¥ v Ç°×º
+            # tag è§¦å‘ â†’ ref_name æ˜¯ v1.2.3ï¼Œå» v å‰ç¼€
             $ver = "${{ github.ref_name }}".TrimStart('v')
           } elseif ($env:EVENT_NAME -eq "pull_request" -and $env:PR_MERGED -eq "true") {
-            # PR ºÏ²¢·¢°æ ¡ú ÓÃÀï³Ì±®°æ±¾£¨Óë release µÄ rtag Ò»ÖÂ£©£¬±£Ö¤ nupkg °æ±¾Óë tag ¶ÔÓ¦
+            # PR åˆå¹¶å‘ç‰ˆ â†’ ç”¨é‡Œç¨‹ç¢‘ç‰ˆæœ¬ï¼ˆä¸ release çš„ rtag ä¸€è‡´ï¼‰ï¼Œä¿è¯ nupkg ç‰ˆæœ¬ä¸ tag å¯¹åº”
             $milestone = "${{ github.event.pull_request.milestone.title }}".Trim()
             if ($milestone -match '^v[0-9]+\.[0-9]+\.[0-9]+$') {
               $ver = $milestone.TrimStart('v')
             }
           }
-          # ÆÕÍ¨ PR ÑéÖ¤²»½âÎö°æ±¾£¨ÎŞÏÂÓÎÏû·ÑÕß£¬²»·¢°æ£©£»·¢°æÀàÊÂ¼ş±ØĞë½âÎöµ½°æ±¾£¬·ñÔò¾Ü¾ø
+          # æ™®é€š PR éªŒè¯ä¸è§£æç‰ˆæœ¬ï¼ˆæ— ä¸‹æ¸¸æ¶ˆè´¹è€…ï¼Œä¸å‘ç‰ˆï¼‰ï¼›å‘ç‰ˆç±»äº‹ä»¶å¿…é¡»è§£æåˆ°ç‰ˆæœ¬ï¼Œå¦åˆ™æ‹’ç»
           if (-not $ver -and $env:EVENT_NAME -ne "pull_request") {
-            throw "ÎŞ·¨½âÎö°æ±¾£º¸Ã´¥·¢Æ÷±ØĞëÌá¹©°æ±¾£¨tag / ÍøÒ³°´Å¥ / PR ºÏ²¢Àï³Ì±®£©"
+            throw "æ— æ³•è§£æç‰ˆæœ¬ï¼šè¯¥è§¦å‘å™¨å¿…é¡»æä¾›ç‰ˆæœ¬ï¼ˆtag / ç½‘é¡µæŒ‰é’® / PR åˆå¹¶é‡Œç¨‹ç¢‘ï¼‰"
           }
           "version=$ver" >> $env:GITHUB_OUTPUT
           Write-Host "build version: $ver"
@@ -88,15 +88,22 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           PR_MERGED: ${{ github.event.pull_request.merged }}
+          MILESTONE: ${{ github.event.pull_request.milestone.title }}
         run: |
-          # ÊÇ·ñ·¢°æ£ºtag push / ÍøÒ³°´Å¥ / PR ºÏ²¢£¨Àï³Ì±®£©¶¼·¢£»ÆÕÍ¨ PR ÑéÖ¤²»·¢
+          # æ˜¯å¦å‘ç‰ˆï¼štag push / ç½‘é¡µæŒ‰é’® / PR åˆå¹¶ï¼ˆåˆæ³•é‡Œç¨‹ç¢‘ï¼‰éƒ½å‘ï¼›æ™®é€š PR éªŒè¯ä¸å‘
           $rel = "false"
           if ($env:EVENT_NAME -eq "push" -and $env:GITHUB_REF -like "refs/tags/v*") {
             $rel = "true"
           } elseif ($env:EVENT_NAME -eq "workflow_dispatch") {
             $rel = "true"
           } elseif ($env:EVENT_NAME -eq "pull_request" -and $env:PR_MERGED -eq "true") {
-            $rel = "true"
+            # PR åˆå¹¶å‘ç‰ˆå¿…é¡»å¸¦åˆæ³•é‡Œç¨‹ç¢‘ vX.Y.Zï¼Œå¦åˆ™ä¸å‘ç‰ˆï¼ˆæºå¤´æ‹¦æˆªï¼Œé¿å…åç»­ç©ºè·‘ï¼‰
+            $milestone = $env:MILESTONE.Trim()
+            if ($milestone -match '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+              $rel = "true"
+            } else {
+              Write-Host "é‡Œç¨‹ç¢‘éæ³•/ç¼ºå¤±ï¼š'$milestone'ï¼Œä¸å‘ç‰ˆ"
+            }
           }
           "should_release=$rel" >> $env:GITHUB_OUTPUT
           Write-Host "should_release: $rel"
@@ -123,16 +130,16 @@ jobs:
             return @{ Family = "unknown"; Major = 0; Minor = 0 }
           }
 
-          # ÓÅÏÈ´Ó slnx ¶ÁÏîÄ¿ÁĞ±í£¨XML ¿É¶Á¡¢½á¹¹Ã÷È·£©£¬ÕÒ²»µ½ÔÙµİ¹éÉ¨ csproj
+          # ä¼˜å…ˆä» slnx è¯»é¡¹ç›®åˆ—è¡¨ï¼ˆXML å¯è¯»ã€ç»“æ„æ˜ç¡®ï¼‰ï¼Œæ‰¾ä¸åˆ°å†é€’å½’æ‰« csproj
           $projFiles = @()
           $slnx = Get-ChildItem -Recurse -Filter "*.slnx" -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($slnx) {
             [xml]$doc = Get-Content $slnx.FullName -Raw
             $projFiles = @($doc.SelectNodes('//Project') | ForEach-Object { Join-Path $slnx.DirectoryName $_.Path })
-            Write-Host "´Ó slnx ($($slnx.Name)) ¶ÁÈ¡ $($projFiles.Count) ¸öÏîÄ¿"
+            Write-Host "ä» slnx ($($slnx.Name)) è¯»å– $($projFiles.Count) ä¸ªé¡¹ç›®"
           } else {
             $projFiles = @(Get-ChildItem -Recurse -Filter "*.csproj" | ForEach-Object { $_.FullName })
-            Write-Host "Î´ÕÒµ½ slnx£¬µİ¹éÉ¨Ãè $($projFiles.Count) ¸ö csproj"
+            Write-Host "æœªæ‰¾åˆ° slnxï¼Œé€’å½’æ‰«æ $($projFiles.Count) ä¸ª csproj"
           }
 
           $exes = @(); $libs = @(); $allTfms = New-Object System.Collections.Generic.List[string]
@@ -235,7 +242,7 @@ jobs:
 
           foreach ($exe in $exes) {
             $best = Get-Highest $exe.Frameworks
-            if (-not $best) { Write-Host "Ìø¹ı $($exe.Name): ÎŞ¿É¹¹½¨¿ò¼Ü"; continue }
+            if (-not $best) { Write-Host "è·³è¿‡ $($exe.Name): æ— å¯æ„å»ºæ¡†æ¶"; continue }
             $fw = $exe.RawFrameworks | Where-Object { $_ -match "net$($best.Major)[.$]$($best.Minor)" } | Select-Object -First 1
             if (-not $fw) { $fw = $exe.RawFrameworks | Where-Object { $_ -match "net$($best.Major)[.$]" } | Select-Object -First 1 }
             if (-not $fw) { $fw = $exe.RawFrameworks[0] }
@@ -246,7 +253,7 @@ jobs:
               if ($LASTEXITCODE -ne 0) { throw "exit $LASTEXITCODE" }
               Compress-Archive -Path "$outDir/*" -DestinationPath "publish/$($exe.Name)-$rid.zip" -Force
               Remove-Item $outDir -Recurse -Force -ErrorAction SilentlyContinue
-            } catch { Write-Host "Ìø¹ı $($exe.Name)-$rid (²»¼æÈİ)" }
+            } catch { Write-Host "è·³è¿‡ $($exe.Name)-$rid (ä¸å…¼å®¹)" }
           }
           $LASTEXITCODE = 0
 
@@ -288,16 +295,31 @@ jobs:
           $exes = $env:EXE_JSON | ConvertFrom-Json
           $fw = '${{ matrix.fw }}'
           $matched = $exes | Where-Object { $_.RawFrameworks -contains $fw }
-          if (-not $matched) { Write-Host "ÏîÄ¿²»Ö§³Ö $fw"; exit 0 }
-          $projNames = ($matched | ForEach-Object { $_.Name }) -join "+"
-          $outDir = "publish/tmp/fdd-$projNames-$fw"
-          New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+          if (-not $matched) { Write-Host "é¡¹ç›®ä¸æ”¯æŒ $fw"; exit 0 }
+          # é€ä¸ª publish åˆ°ç‹¬ç«‹ä¸´æ—¶ç›®å½•ï¼Œå¤±è´¥çš„è·³è¿‡ï¼ˆnetfx ç­‰å¹³å°ç›®æ ‡åœ¨ Linux ç¼–è¯‘å¤±è´¥ä¸ä¸­æ–­å‘ç‰ˆï¼‰
+          $succeeded = @()
           foreach ($exe in $matched) {
+            $tmp = "publish/tmp/fdd-$($exe.Name)-$fw"
             Write-Host "FDD $($exe.Name) -> $fw"
-            dotnet publish $exe.Path -c Release -f $fw -o $outDir
-            if ($LASTEXITCODE -ne 0) { throw "$($exe.Name)-$fw ·¢²¼Ê§°Ü" }
+            try {
+              dotnet publish $exe.Path -c Release -f $fw -o $tmp
+              if ($LASTEXITCODE -ne 0) { throw "exit $LASTEXITCODE" }
+              $succeeded += $exe.Name
+            } catch {
+              Write-Host "è·³è¿‡ $($exe.Name)-$fw (ä¸å…¼å®¹)"
+              Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+            }
           }
-          Compress-Archive -Path "$outDir/*" -DestinationPath "publish/$projNames-$fw.zip" -Force
+          if (-not $succeeded) { Write-Host "è¯¥ TFM æ— å¯ç”¨ exeï¼Œè·³è¿‡"; exit 0 }
+          # æŠŠæˆåŠŸçš„åˆå¹¶åˆ°ä¸€ä¸ªç›®å½•å†å‹ç¼©
+          $outDir = "publish/tmp/fdd-$(($succeeded -join '+'))-$fw"
+          New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+          foreach ($name in $succeeded) {
+            $tmp = "publish/tmp/fdd-$name-$fw"
+            Copy-Item -Path "$tmp/*" -Destination $outDir -Recurse -Force
+            Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          Compress-Archive -Path "$outDir/*" -DestinationPath "publish/$(($succeeded -join '+'))-$fw.zip" -Force
           Remove-Item $outDir -Recurse -Force -ErrorAction SilentlyContinue
 
       - uses: actions/upload-artifact@v4
@@ -306,7 +328,7 @@ jobs:
           path: publish/*.zip
 
   pack:
-    # °æ±¾·Ç¿Õ£ºPR ºÏ²¢+Àï³Ì±®·Ç·¨Ê± bver Êä³ö¿Õ°æ±¾£¬²»·¢°ü£¨±ÜÃâ²ú 1.0.0 À¬»ø artifact£©
+    # ç‰ˆæœ¬éç©ºï¼šPR åˆå¹¶+é‡Œç¨‹ç¢‘éæ³•æ—¶ bver è¾“å‡ºç©ºç‰ˆæœ¬ï¼Œä¸å‘åŒ…ï¼ˆé¿å…äº§ 1.0.0 åƒåœ¾ artifactï¼‰
     if: needs.build.outputs.should_release == 'true' && needs.build.outputs.version != ''
     needs: build
     runs-on: ubuntu-latest
@@ -339,7 +361,7 @@ jobs:
             try {
               dotnet pack $p -c Release -o publish/nupkg -p:Version=$env:PACK_VERSION
               if ($LASTEXITCODE -ne 0) { throw "exit $LASTEXITCODE" }
-            } catch { Write-Host "Ìø¹ı $(Split-Path $p -Leaf) (²»¼æÈİ)" }
+            } catch { Write-Host "è·³è¿‡ $(Split-Path $p -Leaf) (ä¸å…¼å®¹)" }
           }
           $LASTEXITCODE = 0
 
@@ -358,14 +380,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # PR ºÏ²¢·¢°æÊ± tag Òª´òÔÚÕæÊµºÏ²¢Ìá½»ÉÏ£¨squash/merge/rebase ¶¼ÕıÈ·£©£¬
-          # ±ÜÃâ´òµ½ GitHub Ô¤Éú³ÉµÄ refs/pull/N/merge ÁÙÊ±Ìá½»£¨¹Â¶ù tag£©
+          # PR åˆå¹¶å‘ç‰ˆæ—¶ tag è¦æ‰“åœ¨çœŸå®åˆå¹¶æäº¤ä¸Šï¼ˆsquash/merge/rebase éƒ½æ­£ç¡®ï¼‰ï¼Œ
+          # é¿å…æ‰“åˆ° GitHub é¢„ç”Ÿæˆçš„ refs/pull/N/merge ä¸´æ—¶æäº¤ï¼ˆå­¤å„¿ tagï¼‰
           ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Show trigger info
         shell: pwsh
         run: |
-          Write-Host "=== ´¥·¢ĞÅÏ¢ ==="
+          Write-Host "=== è§¦å‘ä¿¡æ¯ ==="
           Write-Host "event_name      : ${{ github.event_name }}"
           Write-Host "ref             : ${{ github.ref }}"
           Write-Host "ref_name        : ${{ github.ref_name }}"
@@ -384,12 +406,12 @@ jobs:
           MILESTONE: ${{ github.event.pull_request.milestone.title }}
         run: |
           if ($env:EVENT_NAME -eq "pull_request" -and $env:PR_MERGED -eq "true") {
-            # PR ºÏ²¢·¢°æ£ºÀï³Ì±® vX.Y.Z ¡ú ÇÀÕ¼Î¨Ò» tag vX.Y.Z-build.{N}
-            # ÓÃ git push ×öÔ­×Ó²Ã¾ö£¨CAS£©£ºÍ¬ºÅÖ»ÓĞÒ»¸ö run ÄÜ push ³É¹¦£¬Êä¼Ò +1 ÖØÊÔ
-            # GITHUB_TOKEN push µÄ tag ²»»á´¥·¢ push:tags CI£¨GitHub ·Àµİ¹é£©£¬ÎŞËÀÑ­»·
+            # PR åˆå¹¶å‘ç‰ˆï¼šé‡Œç¨‹ç¢‘ vX.Y.Z â†’ æŠ¢å å”¯ä¸€ tag vX.Y.Z-build.{N}
+            # ç”¨ git push åšåŸå­è£å†³ï¼ˆCASï¼‰ï¼šåŒå·åªæœ‰ä¸€ä¸ª run èƒ½ push æˆåŠŸï¼Œè¾“å®¶ +1 é‡è¯•
+            # GITHUB_TOKEN push çš„ tag ä¸ä¼šè§¦å‘ push:tags CIï¼ˆGitHub é˜²é€’å½’ï¼‰ï¼Œæ— æ­»å¾ªç¯
             $milestone = $env:MILESTONE.Trim()
             if ($milestone -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
-              Write-Host "Àï³Ì±®±ØĞëÊÇ vX.Y.Z£¨Èç v0.2.0£©£¬µ±Ç°£º'$milestone'£¬Ìø¹ı·¢°æ"
+              Write-Host "é‡Œç¨‹ç¢‘å¿…é¡»æ˜¯ vX.Y.Zï¼ˆå¦‚ v0.2.0ï¼‰ï¼Œå½“å‰ï¼š'$milestone'ï¼Œè·³è¿‡å‘ç‰ˆ"
               "skip=true" >> $env:GITHUB_OUTPUT
               exit 0
             }
@@ -404,10 +426,10 @@ jobs:
               if ($LASTEXITCODE -eq 0) { $pushed = $true; break }
               $n++
             }
-            if (-not $pushed) { throw "ÎŞ·¨»ñÈ¡Î¨Ò» tag£¨³¢ÊÔ 100 ¸ö build ºÅ¾ù±»Õ¼ÓÃ£©" }
-            Write-Host "ÇÀÕ¼³É¹¦£ºÀï³Ì±® $milestone ¡ú $tag"
+            if (-not $pushed) { throw "æ— æ³•è·å–å”¯ä¸€ tagï¼ˆå°è¯• 100 ä¸ª build å·å‡è¢«å ç”¨ï¼‰" }
+            Write-Host "æŠ¢å æˆåŠŸï¼šé‡Œç¨‹ç¢‘ $milestone â†’ $tag"
           } else {
-            # tag push / dispatch£ºÖ±½Ó v{°æ±¾}
+            # tag push / dispatchï¼šç›´æ¥ v{ç‰ˆæœ¬}
             $ver = "${{ needs.build.outputs.version }}"
             $tag = "v$ver"
             Write-Host "release tag: $tag"
@@ -423,22 +445,22 @@ jobs:
           RTAG_SKIP: ${{ steps.rtag.outputs.skip }}
         run: |
           if ($env:RTAG_SKIP -eq "true") {
-            Write-Host "Àï³Ì±®·Ç·¨£¬Ìø¹ı·¢°æ"
+            Write-Host "é‡Œç¨‹ç¢‘éæ³•ï¼Œè·³è¿‡å‘ç‰ˆ"
             "skipped=true" >> $env:GITHUB_OUTPUT
             exit 0
           }
-          # ¸Ã tag ÒÑÓĞÈÎºÎ Release£¨²İ¸å»òÒÑ·¢²¼£©¡ú Ìø¹ı¡£
-          # ·ÀËÀÑ­»·£º·¢²¼²İ¸å ¡ú ´¥·¢ CI ¡ú ÔÙ´Î´¥·¢Ê±·¢ÏÖÒÑ´æÔÚ ¡ú ²»ÔÙ½¨²İ¸å/¸²¸ÇÒÑ·¢²¼µÄ¡£
+          # è¯¥ tag å·²æœ‰ä»»ä½• Releaseï¼ˆè‰ç¨¿æˆ–å·²å‘å¸ƒï¼‰â†’ è·³è¿‡ã€‚
+          # é˜²æ­»å¾ªç¯ï¼šå‘å¸ƒè‰ç¨¿ â†’ è§¦å‘ CI â†’ å†æ¬¡è§¦å‘æ—¶å‘ç°å·²å­˜åœ¨ â†’ ä¸å†å»ºè‰ç¨¿/è¦†ç›–å·²å‘å¸ƒçš„ã€‚
           gh release view "$env:TAG" --repo ${{ github.repository }} --json id 2>&1 | Out-Null
           $exists = $LASTEXITCODE -eq 0
           if ($exists) {
-            Write-Host "tag $env:TAG ÒÑÓĞ Release£¬Ìø¹ı£¨·ÀÖØ¸´·¢°æ/¸²¸Ç£©"
+            Write-Host "tag $env:TAG å·²æœ‰ Releaseï¼Œè·³è¿‡ï¼ˆé˜²é‡å¤å‘ç‰ˆ/è¦†ç›–ï¼‰"
             "skipped=true" >> $env:GITHUB_OUTPUT
           } else {
-            Write-Host "tag $env:TAG ÎŞ Release£¬¼ÌĞø·¢°æ"
+            Write-Host "tag $env:TAG æ—  Releaseï¼Œç»§ç»­å‘ç‰ˆ"
             "skipped=false" >> $env:GITHUB_OUTPUT
           }
-          # gh Ê§°Ü»á²ĞÁô $LASTEXITCODE=1 ¡ú ÏÔÊ½³É¹¦ÍË³ö£¬±ÜÃâ²½Öè±»ÎóÅĞÊ§°Ü
+          # gh å¤±è´¥ä¼šæ®‹ç•™ $LASTEXITCODE=1 â†’ æ˜¾å¼æˆåŠŸé€€å‡ºï¼Œé¿å…æ­¥éª¤è¢«è¯¯åˆ¤å¤±è´¥
           exit 0
 
       - uses: actions/download-artifact@v4
@@ -460,7 +482,7 @@ jobs:
           draft: true
           generate_release_notes: true
 
-  # PR Ô¤ÀÀ£ºPR ´ò¿ª/¸üĞÂÊ±´ò°ü£¬ÆÀÂÛ¸½ÏÂÔØÁ´½Ó
+  # PR é¢„è§ˆï¼šPR æ‰“å¼€/æ›´æ–°æ—¶æ‰“åŒ…ï¼Œè¯„è®ºé™„ä¸‹è½½é“¾æ¥
   pr-preview:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     needs: build
@@ -508,7 +530,8 @@ jobs:
         with:
           name: nupkg-pr-${{ github.event.pull_request.number }}
           path: publish/nupkg/*
-          if-no-files-found: error
+          # çº¯ exe æ–¹æ¡ˆï¼ˆæ— åº“ï¼‰æ—¶æ—  nupkg äº§ç‰©ï¼Œä¸æŠ¥é”™ï¼ˆwarnï¼‰ï¼Œè¯„è®ºä¼šæç¤ºæ— åº“å¯æ‰“åŒ…
+          if-no-files-found: warn
 
       - name: Comment PR with download link
         if: github.event.action == 'opened' || github.event.action == 'reopened'
@@ -519,30 +542,30 @@ jobs:
             const pr = context.payload.pull_request.number;
             const sha7 = context.payload.pull_request.head.sha.slice(0, 7);
 
-            // ²éµ±Ç° run µÄ artifact£¬Éú³É¿Éµã»÷ÏÂÔØÁ´½Ó
+            // æŸ¥å½“å‰ run çš„ artifactï¼Œç”Ÿæˆå¯ç‚¹å‡»ä¸‹è½½é“¾æ¥
             const runId = context.runId;
             const arts = await github.rest.actions.listWorkflowRunArtifacts({
               owner: repo.owner, repo: repo.repo, run_id: runId,
             });
             const links = arts.data.artifacts.map(a =>
               `- [${a.name}](https://github.com/${repo.owner}/${repo.repo}/actions/runs/${runId}/artifacts/${a.id}) (${(a.size_in_bytes/1024).toFixed(1)} KB)`
-            ).join('\n') || '£¨ÎŞ artifact£©';
+            ).join('\n') || 'ï¼ˆæ—  artifactï¼šçº¯ exe æ–¹æ¡ˆæ— åº“å¯æ‰“åŒ…ï¼‰';
 
             const body = [
-              `## ”9à4 PR Ô¤ÀÀ°üÒÑÉú³É / PR Preview package ready`,
+              `## ?? PR é¢„è§ˆåŒ…å·²ç”Ÿæˆ / PR Preview package ready`,
               ``,
-              `- °æ±¾ / Version£º\`0.0.0-pr.${pr}.${sha7}\``,
-              `- ÏÂÔØ / Download£º`,
+              `- ç‰ˆæœ¬ / Versionï¼š\`0.0.0-pr.${pr}.${sha7}\``,
+              `- ä¸‹è½½ / Downloadï¼š`,
               links,
               ``,
-              `> ĞèÒªÖØĞÂ´ò°ü£¿ÆÀÂÛ»Ø¸´ \`@github-actions[bot] pack ${sha7}\``,
+              `> éœ€è¦é‡æ–°æ‰“åŒ…ï¼Ÿè¯„è®ºå›å¤ \`@github-actions[bot] pack ${sha7}\``,
               `> Need to rebuild? Reply with \`@github-actions[bot] pack ${sha7}\``,
             ].join('\n');
             await github.rest.issues.createComment({
               owner: repo.owner, repo: repo.repo, issue_number: pr, body,
             });
 
-  # ÖØĞÂ´ò°ü£ºPR ÆÀÂÛ @github-actions[bot] pack <sha7>
+  # é‡æ–°æ‰“åŒ…ï¼šPR è¯„è®º @github-actions[bot] pack <sha7>
   repack:
     if: |
       github.event_name == 'issue_comment' &&
@@ -561,10 +584,10 @@ jobs:
           BODY: ${{ github.event.comment.body }}
           PR_NUM: ${{ github.event.issue.number }}
         run: |
-          # ÌáÈ¡ @github-actions[bot] pack <sha7>
+          # æå– @github-actions[bot] pack <sha7>
           $m = [regex]::Match($env:BODY, '@github-actions\[bot\]\s+pack\s+([0-9a-f]{7})')
           if (-not $m.Success) {
-            Write-Host "Î´Æ¥Åäµ½ pack ÃüÁî"
+            Write-Host "æœªåŒ¹é…åˆ° pack å‘½ä»¤"
             "valid=false" >> $env:GITHUB_OUTPUT
             exit 0
           }
@@ -582,7 +605,7 @@ jobs:
             const { repo } = context;
             const pr = context.payload.issue.number;
             const sha7 = process.env.SHA7;
-            // È¡ PR È«²¿Ìá½»£¨·ÖÒ³£©£¬¼ì²é sha7 ÊÇ·ñÊÇÆäÖĞÄ³´ÎÌá½»µÄÇ°×º
+            // å– PR å…¨éƒ¨æäº¤ï¼ˆåˆ†é¡µï¼‰ï¼Œæ£€æŸ¥ sha7 æ˜¯å¦æ˜¯å…¶ä¸­æŸæ¬¡æäº¤çš„å‰ç¼€
             let found = null;
             let page = 1;
             while (true) {
@@ -609,7 +632,7 @@ jobs:
             const { repo, issue } = context;
             await github.rest.issues.createComment({
               owner: repo.owner, repo: repo.repo, issue_number: issue.number,
-              body: `7Ã4 \`${process.env.SHA7}\` ²»ÊÇ±¾ PR µÄÌá½» / is not a commit in this PR. Çë´Ó±¾ PR µÄ Commits ÁĞ±í¸´ÖÆ sha Ç°×º¡£Please copy the sha prefix from this PR's Commits tab.`,
+              body: `?? \`${process.env.SHA7}\` ä¸æ˜¯æœ¬ PR çš„æäº¤ / is not a commit in this PR. è¯·ä»æœ¬ PR çš„ Commits åˆ—è¡¨å¤åˆ¶ sha å‰ç¼€ã€‚Please copy the sha prefix from this PR's Commits tab.`,
             });
         env:
           SHA7: ${{ steps.parse.outputs.sha7 }}
@@ -643,7 +666,7 @@ jobs:
         run: |
           $ver = "0.0.0-pr.$env:PR_NUM.$env:SHA7"
           New-Item -ItemType Directory -Path publish -Force | Out-Null
-          # Óë pr-preview Ò»ÖÂ£º´ò°üËùÓĞ¿âÏîÄ¿
+          # ä¸ pr-preview ä¸€è‡´ï¼šæ‰“åŒ…æ‰€æœ‰åº“é¡¹ç›®
           $slnx = Get-ChildItem -Recurse -Filter "*.slnx" -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($slnx) {
             [xml]$doc = Get-Content $slnx.FullName -Raw
@@ -657,7 +680,7 @@ jobs:
             if ($content -match '<OutputType>(.*?)</OutputType>') {
               $outType = $Matches[1]
             } else { $outType = "Library" }
-            if ($outType -eq "Exe" -or $outType -eq "WinExe") { continue }  # Ö»´ò°ü¿â
+            if ($outType -eq "Exe" -or $outType -eq "WinExe") { continue }  # åªæ‰“åŒ…åº“
             Write-Host "Packing: $(Split-Path $p -Leaf) v$ver"
             dotnet pack $p -c Release -o publish/nupkg -p:Version=$ver
             if ($LASTEXITCODE -ne 0) { throw "exit $LASTEXITCODE" }
@@ -669,7 +692,8 @@ jobs:
         with:
           name: nupkg-pr-${{ steps.parse.outputs.pr }}-${{ steps.parse.outputs.sha7 }}
           path: publish/nupkg/*
-          if-no-files-found: error
+          # çº¯ exe æ–¹æ¡ˆï¼ˆæ— åº“ï¼‰æ—¶æ—  nupkg äº§ç‰©ï¼Œä¸æŠ¥é”™ï¼ˆwarnï¼‰
+          if-no-files-found: warn
 
       - name: Reply with download link
         if: steps.verify.outputs.full_sha != ''
@@ -689,10 +713,10 @@ jobs:
             await github.rest.issues.createComment({
               owner: repo.owner, repo: repo.repo, issue_number: pr,
               body: [
-                `## ”9ã4 ÒÑ°´ÇëÇóÖØĞÂ´ò°ü / Rebuilt on request`,
+                `## ?? å·²æŒ‰è¯·æ±‚é‡æ–°æ‰“åŒ… / Rebuilt on request`,
                 ``,
-                `- °æ±¾ / Version£º\`0.0.0-pr.${pr}.${sha7}\``,
-                `- ÏÂÔØ / Download£º`,
+                `- ç‰ˆæœ¬ / Versionï¼š\`0.0.0-pr.${pr}.${sha7}\``,
+                `- ä¸‹è½½ / Downloadï¼š`,
                 links,
               ].join('\n'),
             });
