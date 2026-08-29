@@ -51,6 +51,7 @@ jobs:
         shell: pwsh
         env:
           EVENT_NAME: ${{ github.event_name }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
         run: |
           $input = "${{ github.event.inputs.version }}".Trim()
           $ver = ""
@@ -64,14 +65,17 @@ jobs:
           } elseif ($env:EVENT_NAME -eq "push") {
             # tag 触发 → ref_name 是 v1.2.3，去 v 前缀
             $ver = "${{ github.ref_name }}".TrimStart('v')
-          } elseif ($env:EVENT_NAME -eq "pull_request") {
-            # PR 合并发版 → 用里程碑版本（与 rtag 一致）
+          } elseif ($env:EVENT_NAME -eq "pull_request" -and $env:PR_MERGED -eq "true") {
+            # PR 合并发版 → 用里程碑版本（与 release 的 rtag 一致）
             $milestone = "${{ github.event.pull_request.milestone.title }}".Trim()
             if ($milestone -match '^v[0-9]+\.[0-9]+\.[0-9]+$') {
               $ver = $milestone.TrimStart('v')
             }
           }
-          if (-not $ver) { throw "无法解析版本：该触发器必须提供版本（PR 合并需合法里程碑 / tag / 网页按钮）" }
+          # 普通 PR 验证不解析版本（无下游消费者，不发版）；发版类事件必须解析到版本，否则拒绝
+          if (-not $ver -and $env:EVENT_NAME -ne "pull_request") {
+            throw "无法解析版本：该触发器必须提供版本（tag / 网页按钮 / PR 合并里程碑）"
+          }
           "version=$ver" >> $env:GITHUB_OUTPUT
           Write-Host "build version: $ver"
 
