@@ -14,7 +14,7 @@
 
 `.github/workflows/ci.yml` 包含了完整的 CI/CD：
 
-- **PR 到 main/master** — 自动 `dotnet restore` → `build` → `test`，测试通过才能合并
+- **PR 到 master** — 自动 `dotnet restore` → `build` → `test`（可在仓库 Settings → Branches 配置 required checks 要求测试通过才能合并）；同时打包 PR 预览 nupkg 并评论附下载链接，可在 PR 评论 `@github-actions[bot] pack <sha7>` 重打包某个提交
 - **推送 `v*` 标签** — 自动打包发版
 
 ### 集中配置
@@ -49,7 +49,7 @@
 
 ## 项目说明
 
-//#if (TIsCli)
+//#if (TIsCli && TWithSamples)
 ### CLI
 
 基于 `System.CommandLine` 的命令行应用。入口在 `Tree/CliRoot.cs`。
@@ -86,7 +86,7 @@ Tree/                     ← 镜像命令树层级
 
 基于 `Photino.Blazor` + `Masa.Blazor` 的跨平台桌面应用。无需 WPF/WinForms 依赖，Windows、Linux、macOS 均可运行。
 
-窗口大小默认 1280×720。
+窗口大小默认 1280×750。顶部导航栏右侧带有 Masa logo，点击跳转 [Masa 官方文档](https://docs.masastack.com/)。
 //#endif
 
 //#if (TIsLib)
@@ -110,7 +110,13 @@ GUI 通过项目引用调用。
 //#if (TUseDI)
 ### DI 模式
 
-依赖注入（DI）容器通过 `ServiceCollection` 构建，在应用入口处完成注册、构建、解析：
+依赖注入（DI）容器通过 `ServiceCollection` 构建，在应用入口处完成注册、构建、解析。
+
+**模板预装配：** 开启 DI 时，入口已通过 `AppBootstrap` 完成基础设施装配（按开关裁剪）：
+
+- `AppBootstrap.InitLogging()` / `AttachExceptionHandlers()` — 开日志时最先初始化 Serilog，并为全局未处理异常写日志后继续按默认传播（不静默吞掉）
+- `AppBootstrap.ConfigureFusionCache(services)` — 开 FusionCache 时：`AddSqliteCache("cache.db") → AddFusionCache → WithRegisteredDistributedCache → WithSerializer → AsHybridCache`
+- `AppBootstrap.ConfigureHttpClient(services)` — 开 FusionCache + Polly 时：`AddHttpClient(程序集名)` + `AddResilienceHandler(程序集名)`（key = 程序集名，即项目名），中间件链为 缓存 → 限流重试 → 并发限流 → 429 重试
 
 ```csharp
 var services = new ServiceCollection();
@@ -141,6 +147,8 @@ services.AddSqliteCache("cache.db")
 ```
 
 `.AsHybridCache()` 将 FusionCache 桥接到 `Microsoft.Extensions.Caching.Hybrid`，供下方 Polly 缓存策略使用。
+
+**日志遥测：** 开日志（`TUseLog`）时无需额外代码——DI 下 `AddFusionCache()` 自动注入 `ILogger<FusionCache>`，Serilog 经 `AddSerilog()` 接入 `ILoggerFactory` 后即为 FusionCache 遥测。
 
   //#else
 
@@ -180,13 +188,15 @@ var response = await client.GetAsync("https://api.example.com/users/1");
 // 第二次请求，相同的 URL → 缓存命中，直接返回
 ```
 
-已自动包含 Polly.Core，无需单独引用。
+已自动包含 Polly.Extensions（含 Polly.Core），无需单独引用。
+
+**日志遥测：** 开日志（`TUseLog`）时，模板已在 `AppBootstrap.ConfigureHttpClient` 中调用 `pipeline.ConfigureTelemetry(ILoggerFactory)`，Polly 策略事件（重试、限流拒绝、缓存命中/未命中）经 Serilog 输出。
 
 **缓存键：** HTTP 版本自动从请求生成（格式 `{method}/{scheme}/{host}{path}`），如 `get/https/api.example.com/users/1` 和 `get/https/api.example.com/users/2` 因 path 不同自动区分。通用版本需在执行时通过 `ResilienceContext.OperationKey` 显式传入。可通过 `CachingStrategyOptions.CacheKeyProvider` 自行定义。
 
 **缓存命中：** 命中时直接返回缓存值，**跳过 pipeline 中后续所有策略**（retry、timeout 等不执行）。缓存读/写异常不阻断 pipeline，自动降级执行。
 
-**过期时间：** 默认无 TTL，依赖 FusionCache 全局配置。如需自定义：
+**过期时间：** 默认使用 FusionCache 全局默认 TTL（30 秒），未显式配置时缓存项 30 秒后过期。如需自定义：
 
 ```csharp
 pipeline.AddCaching(new HttpCachingStrategyOptions
@@ -198,6 +208,8 @@ pipeline.AddCaching(new HttpCachingStrategyOptions
     })
 });
 ```
+
+也可在 `AppBootstrap.ConfigureFusionCache` 中通过 `FusionCacheGlobalDefaults.EntryOptionsDuration` 调整全局默认时长。
 
   //#else
 使用 `Microsoft.Extensions.Http.Resilience` 自定义管道：
@@ -353,11 +365,11 @@ Serilog 的配置从 `appsettings.json` 的 `Serilog` 节读取（不是 `Loggin
 ### 分支策略
 
 ```
-main          ← 稳定分支，PR 合并目标
-  └─ feature/xxx  ← 功能分支，from main 分出
+master        ← 稳定分支，PR 合并目标
+  └─ feature/xxx  ← 功能分支，from master 分出
 ```
 
-所有改动在功能分支上进行，完成后提交 Pull Request 到 `main`。
+所有改动在功能分支上进行，完成后提交 Pull Request 到 `master`。
 
 - 分支命名：`feature/简短描述` 或 `fix/简短描述`
 - PR 标题：清晰说明改动内容
@@ -365,23 +377,39 @@ main          ← 稳定分支，PR 合并目标
 
 ### 发版
 
-推送 `v*` 标签（如 `v0.1.0`）时，GitHub Actions 自动：
+GitHub Actions 支持 **三种发版方式**，效果相同：编译 + 测试 → 打 nupkg → 创建 **草稿** GitHub Release（草稿需在网页上手动点「Publish release」才正式发布）。
 
-1. 编译 + 测试
-2. 打 nupkg
-3. 创建 GitHub Release
-4. Release Notes 根据 PR 标签自动分类生成
+**方式一：推送标签**（适合命令行）
 
-标签名即版本号，与 `Directory.Build.props` 中的 `<Version>` 保持一致。
-
-**推送标签：** 在项目目录执行以下命令，后续 `git push` 会自动携带标签：
+推送 `v*` 标签（如 `v0.1.0`）时自动触发：
 
 ```bash
-git config push.followTags true
-git push
+git tag v0.1.0
+git push origin v0.1.0
 ```
 
-首次推送标签可用 `git push --tags`。
+标签名即版本号（不带 `v` 前缀的 `0.1.0` 会写入 nupkg）。
+
+**方式二：网页按钮**（适合不发 git 命令的人）
+
+仓库 **Actions** 页 → 左侧选 **CI** → 右侧 **Run workflow** 按钮：
+
+- 不填版本号：使用 `Directory.Build.props` 中的 `<Version>` 发版
+- 填版本号（如 `1.2.3`）：用填的版本发版（自动补 `v` 前缀，打 `v1.2.3`）
+
+**方式三：PR 合并 + 里程碑**（适合按迭代发版）
+
+给 PR 挂一个 `vX.Y.Z` 格式的里程碑（如 `v0.2.0`），合并该 PR 时自动触发，发布 `vX.Y.Z-build.{N}`（N 从 0 自动递增，如 `v0.2.0-build.0`、`v0.2.0-build.1`）。同一里程碑多次合并会自动累加 build 号。
+
+- 里程碑必须是纯三段版本号 `vX.Y.Z`，不能带 `-pre`/`+meta` 后缀
+- 里程碑缺失或格式不对 → 不发版（不会阻止合并）
+
+**发版后：**
+
+1. Release 是**草稿**状态，去仓库 **Releases** 页检查产物（zip / nupkg）
+2. 确认无误后点 **Publish release** 正式发布
+3. 版本号会同时写入 Release 标签名和 nupkg 版本号。注意方式三（里程碑发版）的 build 号只进 tag（如 `v0.2.0-build.0`），nupkg 版本是里程碑本体（`0.2.0`）
+4. **防重复**：某版本已正式发布后，再触发同名版本不会重复发版（CI 自动跳过，避免死循环）。若想重发，先在 Releases 页删除旧 Release 和 tag，再重新触发
 
 ---
 
