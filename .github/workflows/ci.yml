@@ -199,7 +199,15 @@ jobs:
       - name: Pack nuspec
         if: steps.skip.outputs.skipped != 'true'
         shell: pwsh
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
         run: |
+          Write-Host "DEBUG version=<${{ needs.build.outputs.version }}> tag=<${{ steps.rtag.outputs.tag }}>"
+          Write-Host "DEBUG milestone=<${{ github.event.pull_request.milestone.title }}> merged=<${{ github.event.pull_request.merged }}>"
+          # nuspec 打包时 -p:Version 不覆盖 <version> 元素，必须打包前动态替换
+          $nuspec = Get-Content DotNetTemplate.nuspec -Raw
+          $nuspec = $nuspec -replace '<version>[^<]+</version>', "<version>$env:VERSION</version>"
+          [System.IO.File]::WriteAllText((Resolve-Path DotNetTemplate.nuspec), $nuspec, (New-Object System.Text.UTF8Encoding($false)))
           @"
           <Project Sdk="Microsoft.NET.Sdk">
             <PropertyGroup>
@@ -265,6 +273,10 @@ jobs:
           </Project>
           "@ | Out-File -Encoding utf8 tmp.csproj
           New-Item -ItemType Directory -Path publish -Force | Out-Null
+          # nuspec 打包时 -p:Version 不覆盖 <version> 元素，必须打包前动态替换
+          $nuspec = Get-Content DotNetTemplate.nuspec -Raw
+          $nuspec = $nuspec -replace '<version>[^<]+</version>', "<version>$ver</version>"
+          [System.IO.File]::WriteAllText((Resolve-Path DotNetTemplate.nuspec), $nuspec, (New-Object System.Text.UTF8Encoding($false)))
           dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -p:Version=$ver -o publish *>&1 | Tee-Object -FilePath pack.log
           if ($LASTEXITCODE -ne 0) {
             "## pr-preview pack failed (exit $LASTEXITCODE)" | Out-File -Append $env:GITHUB_STEP_SUMMARY -Encoding utf8
@@ -423,6 +435,10 @@ jobs:
           </Project>
           "@ | Out-File -Encoding utf8 tmp.csproj
           New-Item -ItemType Directory -Path publish -Force | Out-Null
+          # nuspec 打包时 -p:Version 不覆盖 <version> 元素，必须打包前动态替换
+          $nuspec = Get-Content DotNetTemplate.nuspec -Raw
+          $nuspec = $nuspec -replace '<version>[^<]+</version>', "<version>$ver</version>"
+          [System.IO.File]::WriteAllText((Resolve-Path DotNetTemplate.nuspec), $nuspec, (New-Object System.Text.UTF8Encoding($false)))
           dotnet pack tmp.csproj -p:NuspecFile=$(Resolve-Path DotNetTemplate.nuspec) -p:Version=$ver -o publish
           Remove-Item tmp.csproj -ErrorAction SilentlyContinue
           "ver=$ver" >> $env:GITHUB_OUTPUT
