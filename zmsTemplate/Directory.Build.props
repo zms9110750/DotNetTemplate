@@ -18,7 +18,7 @@
   <PropertyGroup Condition="'$(UseFusionCache)' == 'true'">
     <DefineConstants>$(DefineConstants);USE_FUSIONCACHE</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(UseDI)' == 'true'">
+  <PropertyGroup Condition="'$(UseDI)' == 'true' Or '$(IsGui)' == 'true'">
     <DefineConstants>$(DefineConstants);USE_DI</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UseLog)' == 'true'">
@@ -32,6 +32,11 @@
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
+  <!-- ===== 写入 AssemblyMetadata（供反射读取作者，HTTP UA 使用） ===== -->
+  <ItemGroup>
+    <AssemblyMetadata Include="Authors" Value="$(Authors)" />
+  </ItemGroup>
+
   <!-- ===== 程序集名与命名空间根 ===== -->
   <PropertyGroup>
     <RootNamespace Condition="'$(Authors)' != ''">$(Authors).$(MSBuildProjectName)</RootNamespace>
@@ -39,9 +44,16 @@
     <AssemblyName>$(RootNamespace)</AssemblyName>
   </PropertyGroup>
 
-  <!-- ===== InternalsVisibleTo：暴露给测试项目 ===== -->
-  <ItemGroup Condition="'$(IsTest)' == 'true'">
+  <!-- ===== InternalsVisibleTo：非测试项目向测试项目暴露 internal（IsTest 是全局开关，不能用；用项目名是否含 .Test 判断） ===== -->
+  <ItemGroup Condition="!$(MSBuildProjectName.EndsWith('.Test'))">
     <InternalsVisibleTo Include="$(AssemblyName).Test" />
+  </ItemGroup>
+
+  <!-- ===== 测试资源：所有测试项目外引用 test/Resources（网络资源放这里，避免测试访问网络） ===== -->
+  <ItemGroup Condition="'$(IsTest)' == 'true'">
+    <Content Include="$(MSBuildThisFileDirectory)test/Resources/**"
+             Link="Resources/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- ===== 条件包引用 ===== -->
@@ -58,9 +70,9 @@
 
   <!-- 按 DI 分组 -->
   <Choose>
-    <When Condition="'$(UseDI)' == 'true'">
+    <When Condition="'$(UseDI)' == 'true' Or '$(IsGui)' == 'true'">
       <ItemGroup Condition="'$(UseFusionCache)' != 'true' And '$(UsePolly)' != 'true' And '$(UseLog)' != 'true'">
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.4" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
       </ItemGroup>
       <ItemGroup Condition="'$(UseFusionCache)' == 'true'">
         <PackageReference Include="NeoSmart.Caching.Sqlite.AspNetCore" Version="9.0.1" />
@@ -83,9 +95,12 @@
       </ItemGroup>
       <ItemGroup Condition="'$(UsePolly)' == 'true' And '$(UseFusionCache)' == 'true'">
         <PackageReference Include="Axion.Extensions.Polly.Caching.Hybrid" Version="10.4.0" />
+        <PackageReference Include="Polly.Extensions" Version="8.7.0" />
+        <PackageReference Include="Polly.RateLimiting" Version="8.7.0" />
       </ItemGroup>
       <ItemGroup Condition="'$(UsePolly)' == 'true' And '$(UseFusionCache)' != 'true'">
-        <PackageReference Include="Polly.Core" Version="8.7.0" />
+        <PackageReference Include="Polly.Extensions" Version="8.7.0" />
+        <PackageReference Include="Polly.RateLimiting" Version="8.7.0" />
       </ItemGroup>
     </Otherwise>
   </Choose>

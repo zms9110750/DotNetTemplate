@@ -1,11 +1,28 @@
 @namespace MyApp
 
-<div>
-    <h1>@Title</h1>
-    <p>Welcome to your Photino desktop app!</p>
-    <p>Current count: @currentCount</p>
-    <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
-</div>
+<MApp>
+    <MAppBar App>
+        <MToolbarTitle>@Title</MToolbarTitle>
+
+        <MSpacer></MSpacer>
+
+        <!-- Masa 官方文档链接（顶部导航栏右侧 logo） -->
+        <MButton Href="https://docs.masastack.com/" Target="_blank" Icon>
+            <img src="images/masa-logo.png" alt="Masa docs" style="height: 28px; width: 28px;" />
+        </MButton>
+    </MAppBar>
+
+    <MMain>
+        <MContainer Fluid>
+            <div>
+                <h1>@Title</h1>
+                <p>Welcome to your Photino desktop app!</p>
+                <p>Current count: @currentCount</p>
+                <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+            </div>
+        </MContainer>
+    </MMain>
+</MApp>
 
 @code {
     string Title = "MyApp";

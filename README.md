@@ -23,7 +23,7 @@ dotnet new install DotNetTemplate/zmsTemplate
 dotnet new zms -n MyApp --TIsLib true --TIsCli true
 ```
 
-参数说明（所有参数均为可选，默认 false）：
+参数说明（所有参数均为可选，布尔参数默认 false，`TWithSamples` 默认 true）：
 
 | 参数 | 说明 |
 |------|------|
@@ -31,11 +31,12 @@ dotnet new zms -n MyApp --TIsLib true --TIsCli true
 | `--TIsCli` | CLI 示例 |
 | `--TIsGui` | GUI 示例 |
 | `--TIsTest` | 测试项目 |
+| `--TWithSamples` | 生成示例代码（CLI 命令树 / GUI 计数器，默认 true；false 时生成空壳） |
 | `--TUsePolly` | Polly 弹性/重试 |
 | `--TUseFusionCache` | FusionCache 缓存 |
 | `--TUseDI` | DI 依赖注入容器 |
 | `--TUseLog` | Serilog 日志 |
-| `--TAuthorName` | 作者名 |
+| `--AuthorName` | 作者名 |
 
 推荐组合：
 

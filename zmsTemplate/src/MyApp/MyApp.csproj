@@ -9,7 +9,7 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Title></Title>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <PackageReadmeFile>Readme.md</PackageReadmeFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags></PackageTags>
   </PropertyGroup>
 
@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Readme.md" Pack="true" PackagePath="\" />
+    <Content Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
