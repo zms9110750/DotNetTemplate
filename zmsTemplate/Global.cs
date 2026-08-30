@@ -42,8 +42,8 @@ global using Photino.Blazor;
 global using Xunit;
 #endif
 
-/// <summary>应用引导：Serilog 初始化、全局异常兜底、DI 装配。仅按编译常量条件编译。类壳条件 = 入口项目标记 && 方法条件之或：lib 需要本文件的 global usings 但不需要此类。</summary>
 #if (IS_CLI || IS_GUI || IS_TEST) && (USE_LOG || (USE_DI && USE_FUSIONCACHE))
+/// <summary>应用引导：Serilog 初始化、全局异常兜底、DI 装配。仅按编译常量条件编译。类壳条件 = 入口项目标记 且 方法条件之或：lib 需要本文件的 global usings 但不需要此类。</summary>
 public static class GlobalUsing
 {
 #if USE_LOG
