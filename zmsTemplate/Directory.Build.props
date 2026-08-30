@@ -44,8 +44,8 @@
     <AssemblyName>$(RootNamespace)</AssemblyName>
   </PropertyGroup>
 
-  <!-- ===== InternalsVisibleTo：暴露给测试项目 ===== -->
-  <ItemGroup Condition="'$(IsTest)' == 'true'">
+  <!-- ===== InternalsVisibleTo：非测试项目向测试项目暴露 internal（IsTest 是全局开关，不能用；用项目名是否含 .Test 判断） ===== -->
+  <ItemGroup Condition="!$(MSBuildProjectName.EndsWith('.Test'))">
     <InternalsVisibleTo Include="$(AssemblyName).Test" />
   </ItemGroup>
 
