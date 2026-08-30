@@ -42,8 +42,9 @@ global using Photino.Blazor;
 global using Xunit;
 #endif
 
-/// <summary>应用引导：Serilog 初始化、全局异常兜底、DI 装配。仅按编译常量条件编译。</summary>
-public static class AppBootstrap
+/// <summary>应用引导：Serilog 初始化、全局异常兜底、DI 装配。仅按编译常量条件编译。类壳条件 = 入口项目标记 && 方法条件之或：lib 需要本文件的 global usings 但不需要此类。</summary>
+#if (IS_CLI || IS_GUI || IS_TEST) && (USE_LOG || (USE_DI && USE_FUSIONCACHE))
+public static class GlobalUsing
 {
 #if USE_LOG
     /// <summary>最先初始化 Serilog（Console + File）；任何阶段（含启动早期异常）的日志都能落盘。</summary>
@@ -155,3 +156,4 @@ public static class AppBootstrap
     }
 #endif
 }
+#endif

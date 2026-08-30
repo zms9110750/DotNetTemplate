@@ -1,8 +1,8 @@
 // Serilog 最先初始化 + 全局异常兜底（写日志后继续报错，不静默吞掉）
 //-:cnd:noEmit
 #if USE_LOG
-AppBootstrap.InitLogging();
-AppBootstrap.AttachExceptionHandlers();
+GlobalUsing.InitLogging();
+GlobalUsing.AttachExceptionHandlers();
 #endif
 //+:cnd:noEmit
 
@@ -10,11 +10,11 @@ AppBootstrap.AttachExceptionHandlers();
 //-:cnd:noEmit
 #if USE_DI && USE_FUSIONCACHE
 var services = new ServiceCollection();
-AppBootstrap.ConfigureFusionCache(services);
+GlobalUsing.ConfigureFusionCache(services);
 #endif
 
 #if USE_DI && USE_FUSIONCACHE && USE_POLLY
-AppBootstrap.ConfigureHttpClient(services);
+GlobalUsing.ConfigureHttpClient(services);
 #endif
 
 // Serilog 接入 DI 容器：ConfigureTelemetry 的 ILoggerFactory 由此获得 Serilog provider（Polly 遥测真正落盘）

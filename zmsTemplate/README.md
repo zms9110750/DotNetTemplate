@@ -1,4 +1,4 @@
-﻿# MyApp
+# MyApp
 
 这是一个由 **zmsTemplate** 生成的开源项目。
 
@@ -112,11 +112,11 @@ GUI 通过项目引用调用。
 
 依赖注入（DI）容器通过 `ServiceCollection` 构建，在应用入口处完成注册、构建、解析。
 
-**模板预装配：** 开启 DI 时，入口已通过 `AppBootstrap` 完成基础设施装配（按开关裁剪）：
+**模板预装配：** 开启 DI 时，入口已通过 `GlobalUsing` 完成基础设施装配（按开关裁剪）：
 
-- `AppBootstrap.InitLogging()` / `AttachExceptionHandlers()` — 开日志时最先初始化 Serilog，并为全局未处理异常写日志后继续按默认传播（不静默吞掉）
-- `AppBootstrap.ConfigureFusionCache(services)` — 开 FusionCache 时：`AddSqliteCache("cache.db") → AddFusionCache → WithRegisteredDistributedCache → WithSerializer → AsHybridCache`
-- `AppBootstrap.ConfigureHttpClient(services)` — 开 FusionCache + Polly 时：`AddHttpClient(程序集名)` + `AddResilienceHandler(程序集名)`（key = 程序集名，即项目名），中间件链为 缓存 → 限流重试 → 并发限流 → 429 重试
+- `GlobalUsing.InitLogging()` / `AttachExceptionHandlers()` — 开日志时最先初始化 Serilog，并为全局未处理异常写日志后继续按默认传播（不静默吞掉）
+- `GlobalUsing.ConfigureFusionCache(services)` — 开 FusionCache 时：`AddSqliteCache("cache.db") → AddFusionCache → WithRegisteredDistributedCache → WithSerializer → AsHybridCache`
+- `GlobalUsing.ConfigureHttpClient(services)` — 开 FusionCache + Polly 时：`AddHttpClient(程序集名)` + `AddResilienceHandler(程序集名)`（key = 程序集名，即项目名），中间件链为 缓存 → 限流重试 → 并发限流 → 429 重试
 
 ```csharp
 var services = new ServiceCollection();
@@ -190,7 +190,7 @@ var response = await client.GetAsync("https://api.example.com/users/1");
 
 已自动包含 Polly.Extensions（含 Polly.Core），无需单独引用。
 
-**日志遥测：** 开日志（`TUseLog`）时，模板已在 `AppBootstrap.ConfigureHttpClient` 中调用 `pipeline.ConfigureTelemetry(ILoggerFactory)`，Polly 策略事件（重试、限流拒绝、缓存命中/未命中）经 Serilog 输出。
+**日志遥测：** 开日志（`TUseLog`）时，模板已在 `GlobalUsing.ConfigureHttpClient` 中调用 `pipeline.ConfigureTelemetry(ILoggerFactory)`，Polly 策略事件（重试、限流拒绝、缓存命中/未命中）经 Serilog 输出。
 
 **缓存键：** HTTP 版本自动从请求生成（格式 `{method}/{scheme}/{host}{path}`），如 `get/https/api.example.com/users/1` 和 `get/https/api.example.com/users/2` 因 path 不同自动区分。通用版本需在执行时通过 `ResilienceContext.OperationKey` 显式传入。可通过 `CachingStrategyOptions.CacheKeyProvider` 自行定义。
 
@@ -209,7 +209,7 @@ pipeline.AddCaching(new HttpCachingStrategyOptions
 });
 ```
 
-也可在 `AppBootstrap.ConfigureFusionCache` 中通过 `FusionCacheGlobalDefaults.EntryOptionsDuration` 调整全局默认时长。
+也可在 `GlobalUsing.ConfigureFusionCache` 中通过 `FusionCacheGlobalDefaults.EntryOptionsDuration` 调整全局默认时长。
 
   //#else
 使用 `Microsoft.Extensions.Http.Resilience` 自定义管道：

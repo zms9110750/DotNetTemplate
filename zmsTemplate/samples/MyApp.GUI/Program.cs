@@ -8,8 +8,8 @@ class Program
 //-:cnd:noEmit
 #if USE_LOG
         // Serilog 最先初始化 + 全局异常兜底（写日志后继续报错，不静默吞掉）
-        AppBootstrap.InitLogging();
-        AppBootstrap.AttachExceptionHandlers();
+        GlobalUsing.InitLogging();
+        GlobalUsing.AttachExceptionHandlers();
 #endif
 //+:cnd:noEmit
 
@@ -19,12 +19,12 @@ class Program
 
 //-:cnd:noEmit
 #if USE_FUSIONCACHE
-        AppBootstrap.ConfigureFusionCache(appBuilder.Services);
+        GlobalUsing.ConfigureFusionCache(appBuilder.Services);
 #endif
 
 #if USE_FUSIONCACHE && USE_POLLY
         // key = 程序集名（AddHttpClient / AddResilienceHandler 同名）
-        AppBootstrap.ConfigureHttpClient(appBuilder.Services);
+        GlobalUsing.ConfigureHttpClient(appBuilder.Services);
 #endif
 //+:cnd:noEmit
 
