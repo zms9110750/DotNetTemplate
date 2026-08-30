@@ -18,6 +18,11 @@
     <PackageReference Include="Masa.Blazor" Version="1.11.9" />
   </ItemGroup>
 
+  <!-- AddSerilog() 需要 Serilog.Extensions.Hosting；与 Directory.Build.props 的 DI 分支可能重复引用（同版本，NuGet 自动去重） -->
+  <ItemGroup Condition="'$(UseLog)' == 'true'">
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+  </ItemGroup>
+
   <ItemGroup>
     <Content Update="wwwroot\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

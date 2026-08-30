@@ -19,6 +19,8 @@
     "TIsGui":  { "type": "parameter", "description": "GUI 示例 (samples/GUI)", "datatype": "bool", "defaultValue": "false", "replaces": "{{TIsGui}}" },
     "TIsTest": { "type": "parameter", "description": "测试 (test)",            "datatype": "bool", "defaultValue": "false", "replaces": "{{TIsTest}}" },
 
+    "TWithSamples": { "type": "parameter", "description": "生成示例（CLI 猜拳、GUI 计数器）", "datatype": "bool", "defaultValue": "true" },
+
     "AuthorName": {
       "type": "parameter",
       "description": "作者名",
@@ -54,7 +56,27 @@
         // lib 关 + gui 开 → GUI 进 src（无 lib）
         { "condition": "(TIsLib == false && TIsGui == true)", "include": [ "src/MyApp.GUI/**/*" ], "copyOnly": [ "**/Global.cs" ] },
         // test 始终进 test
-        { "condition": "(TIsTest == true)", "include": [ "test/**/*" ], "copyOnly": [ "**/Global.cs" ] }
+        { "condition": "(TIsTest == true)", "include": [ "test/**/*" ], "copyOnly": [ "**/Global.cs" ] },
+        // 示例开关：关闭时排除 CLI 示例命令（Tree/Options/Shared），GUI 用 EmptyApp 替换计数器 App
+        { "condition": "(TIsCli == true && TWithSamples == false)", "exclude": [
+          "samples/MyApp.Cli/Tree/**",
+          "samples/MyApp.Cli/Options/**",
+          "samples/MyApp.Cli/Shared/**",
+          "src/MyApp.Cli/Tree/**",
+          "src/MyApp.Cli/Options/**",
+          "src/MyApp.Cli/Shared/**"
+        ] },
+        // EmptyApp 仅随 GUI 目录 include 自动进入；开示例时排除它，关示例时排除计数器 App
+        { "condition": "(TWithSamples == true)", "exclude": [
+          "samples/MyApp.GUI/EmptyApp.razor",
+          "src/MyApp.GUI/EmptyApp.razor"
+        ] },
+        { "condition": "(TIsLib == true && TIsGui == true && TWithSamples == false)", "exclude": [
+          "samples/MyApp.GUI/App.razor"
+        ] },
+        { "condition": "(TIsLib == false && TIsGui == true && TWithSamples == false)", "exclude": [
+          "src/MyApp.GUI/App.razor"
+        ] }
       ]
     }
   ],

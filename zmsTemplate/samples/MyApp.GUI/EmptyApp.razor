@@ -17,8 +17,6 @@
             <div>
                 <h1>@Title</h1>
                 <p>Welcome to your Photino desktop app!</p>
-                <p>Current count: @currentCount</p>
-                <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
             </div>
         </MContainer>
     </MMain>
@@ -26,10 +24,4 @@
 
 @code {
     string Title = "MyApp";
-    private int currentCount = 0;
-
-    void IncrementCount()
-    {
-        currentCount++;
-    }
 }
