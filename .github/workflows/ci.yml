@@ -44,8 +44,6 @@ jobs:
           dotnet-version: ${{ steps.dotver.outputs.version }}
           dotnet-quality: ga
 
-      - run: dotnet restore
-
       - name: Resolve build version
         id: bver
         shell: pwsh
@@ -248,8 +246,6 @@ jobs:
         with:
           dotnet-version: ${{ steps.dotver.outputs.version }}
           dotnet-quality: ga
-
-      - run: dotnet restore
 
       - name: Pack PR preview
         shell: pwsh
