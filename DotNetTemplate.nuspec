@@ -10,6 +10,8 @@
     </packageTypes>
   </metadata>
   <files>
-    <file src="zmsTemplate/**/*" target="content/zmsTemplate/" />
+    <file src="zmsTemplate/**/*" target="content/zmsTemplate/" exclude="zmsTemplate/**/bin/**;zmsTemplate/**/obj/**" />
+    <file src="zmsTemplate/.editorconfig" target="content/zmsTemplate/" />
+    <file src="zmsTemplate/.gitignore" target="content/zmsTemplate/" />
   </files>
 </package>
