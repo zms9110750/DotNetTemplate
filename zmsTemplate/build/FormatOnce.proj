@@ -1,0 +1,22 @@
+<Project>
+
+  <!--
+    整个构建只真正执行一次的格式化入口。
+
+    为什么要有这个文件：把 `dotnet format` 直接写在 Directory.Build.props 的 BeforeBuild 里，
+    会被每一个参与编译的项目各触发一次（A 引用 B、B 引用 C 时就是 3 次，且每次都是全量）。
+    MSBuild 对「(项目文件, 全局属性, target)」三元组去重：所有项目都通过 MSBuild 任务调用
+    本项目的 FormatOnce target，且调用时清掉会因项目而异的全局属性，于是整个构建里
+    `dotnet format` 只会真正启动一次。
+
+    实测行为：目录里存在 MyApp.slnx 时，这一次调用是整条依赖链／整个解决方案的全量格式化。
+
+    放在 build/ 子目录是刻意的：`dotnet format` 未指定目标时会从工作目录（= 模板根）找
+    以 proj/sln 结尾的文件，本文件若放在模板根会被误认为是格式化目标。
+  -->
+  <Target Name="FormatOnce">
+    <Exec Command="dotnet format --no-restore"
+          WorkingDirectory="$(MSBuildThisFileDirectory)..\" />
+  </Target>
+
+</Project>

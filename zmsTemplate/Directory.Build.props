@@ -106,10 +106,18 @@
   </Choose>
 
   <!-- 编译前格式化（仅当 .editorconfig 存在时执行） -->
+  <!-- 用户：「既然是项目去执行这个命令。那么我希望这个命令是对项目执行的。而不是，a依赖b，b依赖c，执行一下a，然后abc都执行命令，执行三次对sln的格式化。」
+       用户：「a执行编译，就对a进行格式化。b执行编译就对b进行格式化。仅需要编译的项目跑一次格式化。」
+       用户：「相当于a->b->c。只有a自己可以调出来这个命令。但这个命令同时作用于abc。也就是无论如何，启动这个程序的时间只要一份。」
+       —— 做法：项目自己不再直接跑 dotnet format，而是统一调用 build/FormatOnce.proj 里的目标。
+         MSBuild 对「(项目文件, 全局属性, target)」三元组去重，所以整次构建只会真正执行一次。
+         RemoveProperties 是必需的：各项目传来的 Configuration/TargetFramework 等全局属性不同，
+         不清掉就会被当成不同调用，去重失效、又退化成每个项目各跑一次。
+         实测：csproj 构建与 sln 构建都只真正执行 1 次（sln 下三个项目都调用，但只执行一次）。 -->
   <Target Name="FormatCode" BeforeTargets="BeforeBuild"
           Condition="Exists('$(MSBuildThisFileDirectory).editorconfig')">
-    <Exec Command="dotnet format --no-restore"
-          WorkingDirectory="$(MSBuildThisFileDirectory)" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)build/FormatOnce.proj" Targets="FormatOnce"
+             RemoveProperties="Configuration;Platform;TargetFramework;TargetFrameworks;RuntimeIdentifier;BuildingSolutionFile;CurrentSolutionConfigurationContents;SolutionDir;SolutionFileName;SolutionName;SolutionPath;SolutionExt;BuildingInsideVisualStudio;BuildProjectReferences" />
   </Target>
 
   <!-- ===== 全局 Global.cs（所有项目共享） ===== -->
